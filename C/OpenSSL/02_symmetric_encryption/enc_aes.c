@@ -24,7 +24,7 @@ int main(){
     unsigned char ciphertext[48];
 
     // 
-    printf("\nPlaintext length: %lu\n", strlen(plaintext));
+    printf("\nPlaintext length: %lu", strlen(plaintext));
 
     int length;
     int ciphertext_len = 0;
@@ -40,7 +40,7 @@ int main(){
     );
     
     //Here the value stored will be the size of the data that was encrypted, without padding
-    printf("\nAfter update: %d", length);
+    printf("\n\nAfter update, so after the initial encryption: %d", length);
     ciphertext_len += length;
 
 
@@ -54,19 +54,34 @@ int main(){
     );
     
     //Now the value stored in this variable will be the length of the padding
-    printf("\nAfter final: %d", length);
+    printf("\n\nAfter final, so after the adding of the padding: %d", length);
     ciphertext_len += length;
 
     // Frees the allocated cipher context
     EVP_CIPHER_CTX_free(ctx);
 
     // Prints total ciphertext length
-    printf("\nSize of the ciphertext = %d\n\n", ciphertext_len);
+    printf("\n\nSize of the ciphertext = %d\n", ciphertext_len);
+
+
+    printf("\nHexadecimal representation of the ciphertext: ");
 
     // Prints the ciphertext bytes in hexadecimal
+    //Since the result of the encryption is a binary data, we can print it in hexadecimal format
+    //This is a common way to represent binary data in a human-readable way
     for(int i = 0; i < ciphertext_len; i++)
         printf("%02x", ciphertext[i]);
     printf("\n");
+
+    printf("\n Binary representation of the ciphertext: ");
+
+    for (int i = 0; i < ciphertext_len; i++) {
+        for (int bit = 7; bit >= 0; bit--) {
+            printf("%d", (ciphertext[i] >> bit) & 1);  // Extract and print each bit of the byte
+        }
+        printf(" ");  // Print a space between bytes for clarity
+    }
+    
 
     return 0;
 }

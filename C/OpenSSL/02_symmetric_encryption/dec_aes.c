@@ -32,6 +32,9 @@ int main(){
     // Buffer to hold the binary form of the hexadecimal ciphertext
     unsigned char ciphertext_bin[strlen(ciphertext)/2];
 
+    printf("\nOriginal (hex) ciphertext: %s", ciphertext);
+    printf("\n\nNumber of hex characters: %lu", strlen(ciphertext));
+
     // Converts every pair of hex characters into a byte and stores it in ciphertext_bin
     // The sscanf function reads formatted input from a string, in this case, the ciphertext
     // The %2hhx format specifier reads two hexadecimal characters and stores them in a char variable
@@ -55,7 +58,7 @@ int main(){
     );
 
     // Shows how many bytes were decrypted in 'update'
-    printf("\nAfter update: %d", length);
+    printf("\n\nAfter update (bytes decrypted so far): %d", length);
     plaintext_len += length;
 
     // Finalizes decryption, handling any leftover data or padding
@@ -66,7 +69,7 @@ int main(){
     );
 
     // Shows how many bytes were decrypted in 'final'
-    printf("\nAfter final: %d", length);
+    printf("\n\nAfter final (additional bytes decrypted): %d", length);
     plaintext_len += length;
 
     // Cleans up the cipher context
@@ -76,10 +79,10 @@ int main(){
     plaintext[plaintext_len] = '\0';
 
     // Prints the size of the decrypted text
-    printf("\nThe size of the plaintext is: %d\n", plaintext_len);
+    printf("\n\nTotal decrypted bytes: %d", plaintext_len);
 
     // Prints the decrypted text
-    printf("\nPlaintext = %s\n", plaintext);
+    printf("\n\nDecrypted plaintext: %s\n", plaintext);
 
     return 0;
 }
