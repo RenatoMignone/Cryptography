@@ -18,10 +18,13 @@ int main(){
     //As we know, since we are using the cbc mode we need to provide the IV
     EVP_CipherInit(ctx, EVP_aes_128_cbc(), key, iv, ENCRYPT);
 
-    // Plaintext to encrypt; length is 44 bytes (ASCII characters)
+    // Plaintext to encrypt; length is 42 bytes (ASCII characters)
     unsigned char plaintext[] = "This variable contains the data to encrypt";
     // Buffer for the ciphertext; must hold the encrypted data plus potential padding
     unsigned char ciphertext[48];
+
+    // 
+    printf("\nPlaintext length: %lu\n", strlen(plaintext));
 
     int length;
     int ciphertext_len = 0;
