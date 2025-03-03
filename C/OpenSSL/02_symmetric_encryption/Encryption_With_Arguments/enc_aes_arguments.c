@@ -6,7 +6,9 @@
 
 
 // example usage of the tool: 
-// ./enc_aes_arguments enc_aes_arguments.c 1234567890123456789012345678901212345678901234567890123456789012 1234567890123456789012345678901212345678901234567890123456789012
+// ./enc_aes_arguments enc_aes_arguments.c 1234567890123456789012345678901212345678901234567890123456789012 1234567890123456789012345678901212345678901234567890123456789012 enc.enc 
+
+// check if the command from the command line of openSSL returns the same encrypted file
 
 #define ENCRYPT 1
 #define DECRYPT 0
@@ -17,6 +19,7 @@
 // argv[1] --> input file
 // argv[2] --> key   (hexstring)
 // argv[3] --> IV    (hexstring)
+// argv[4] --> output file
 // save in a buffer in memory the result of the enrtypted file
 
 
@@ -37,8 +40,8 @@ int main(int argc, char **argv){
 
 
     //if the number of arguments is different from 4, we need to raise an error
-    if(argc != 4){
-        fprintf(stderr, "Usage: %s <input file> <key> <IV>\n", argv[0]);
+    if(argc != 5){
+        fprintf(stderr, "Usage: %s <input file> <key> <IV> <output file>\n", argv[0]);
         exit(1);
     }
 
@@ -46,11 +49,18 @@ int main(int argc, char **argv){
     /*---------------------------- INPUT FILE HANDLING --------------------------------*/
     //we open the file in read mode
     FILE *file_input;
+    FILE *file_output;
 
     if((file_input = fopen(argv[1], "r")) == NULL){
         fprintf(stderr, "Error opening the input file %s\n", argv[1]);
         exit(1);
     }
+
+    if((file_output = fopen(argv[4], "w")) == NULL){
+        fprintf(stderr, "Error opening the output file %s\n", argv[1]);
+        exit(1);
+    }
+
 
 
     /*---------------------------------------------------------------------------------*/
@@ -96,7 +106,7 @@ int main(int argc, char **argv){
     //where the input will be available
     unsigned char buffer[MAX_SIZE];
     //buffer to store the ciphertext
-    unsigned char ciphertext[100 * MAX_SIZE];
+    unsigned char ciphertext[MAX_SIZE + 16 ];
 
     int len, ciphertext_len=0;
 
@@ -109,24 +119,41 @@ int main(int argc, char **argv){
             exit(1);
         }
 
-        if(!EVP_CipherUpdate(ctx, ciphertext + ciphertext_len, &len, buffer, bytes_read))
+        if(!EVP_CipherUpdate(ctx, ciphertext, &len, buffer, bytes_read))
             handle_errors();
         //since we are not reading only once this function, we need to adapt the code 
         //we are adding the value of the current bytes encyphered
         ciphertext_len += len;
         //in this way the next operation of the cipher update, will start from the last position
+
+        //write the ciphertext to the output file
+        if(fwrite(ciphertext, 1, len, file_output) < len){
+            fprintf(stderr, "Error writing the ciphertext to the output file\n");
+            exit(1);
+        }
     }
 
-    if(!EVP_CipherFinal(ctx, ciphertext + ciphertext_len, &len))
+    /*---------------------------------------------------------------------------------*/
+    /*---------------------------- FINAL ENCRYPTION HANDLING ---------------------------*/
+
+    if(!EVP_CipherFinal(ctx, ciphertext, &len))
         handle_errors();
 
     ciphertext_len += len;
 
+    //write the ciphertext to the output file
+    if(fwrite(ciphertext, 1, len, file_output) < len){
+        fprintf(stderr, "Error writing the ciphertext to the output file\n");
+        exit(1);
+    }
+
+
+    //free the context
     EVP_CIPHER_CTX_free(ctx);
 
 
     //print the length of the ciphertext
-    printf("\nCiphertext length: %d\n", ciphertext_len);
+    printf("\nCiphertext length: %d\n\n", ciphertext_len);
 
     //print the result as a hex string
     for (int i = 0; i < ciphertext_len; i++)
@@ -137,6 +164,10 @@ int main(int argc, char **argv){
     //CLEANUP OF THE ERRORS
     CRYPTO_cleanup_all_ex_data();
     ERR_free_strings();
+
+    //close the files
+    fclose(file_input);
+    fclose(file_output);
 
     return 0;
 }
