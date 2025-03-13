@@ -63,7 +63,7 @@ int main(int argc, char **argv){
 
     //the finalization requires the usage of a buffer to store the final value
     //has to be as big as the output of the hash function that we are using
-    unsigned char hmac_value[HMAC_size(hmac_ctx)];
+    unsigned char hmac_value[EVP_MD_size(EVP_sha256())];
 
     //an integer used to store the length of the hmac value
     int hmac_len;
