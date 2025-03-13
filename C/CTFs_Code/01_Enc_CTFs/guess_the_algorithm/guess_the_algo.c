@@ -53,7 +53,7 @@ unsigned char *base64_decode(const char *input, int *len) {
     return buffer;
 }
 
-void try_decrypt(const char *mode_name, const EVP_CIPHER *(*cipher)(), int key_len) {
+void try_decrypt(const char *mode_name, const EVP_CIPHER *(*cipher)(), int key_len, int iv_len) {
     const char *base64_ciphertext = "ZZJ+BKJNdpXA2jaX8Zg5ItRola18hi95MG8fA/9RPvg=";
     unsigned char key[16] = "0123456789ABCDEF";
     unsigned char iv[16] = "0123456789ABCDEF";
@@ -95,10 +95,11 @@ int main() {
     ERR_load_crypto_strings();
     OpenSSL_add_all_algorithms();
 
-    try_decrypt("AES-128-CBC", EVP_aes_128_cbc, 16);
-    try_decrypt("AES-128-ECB", EVP_aes_128_ecb, 16);
-    try_decrypt("AES-128-CFB", EVP_aes_128_cfb128, 16);
-    try_decrypt("AES-128-OFB", EVP_aes_128_ofb, 16);
+    try_decrypt("AES-128-CBC", EVP_aes_128_cbc, 16, 16);
+    try_decrypt("AES-128-ECB", EVP_aes_128_ecb, 16, 0);
+    try_decrypt("AES-128-CFB", EVP_aes_128_cfb128, 16, 16);
+    try_decrypt("AES-128-OFB", EVP_aes_128_ofb, 16, 16);
+    try_decrypt("ChaCha20", EVP_chacha20, 32, 16);
 
     return 0;
 }
