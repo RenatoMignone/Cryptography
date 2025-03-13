@@ -1,3 +1,5 @@
+//// filepath: /home/ren/PERSONAL_DIRECTORY/CyberSecurity/First_Year/Second_Semester/CRYPTOGRAPHY/C/OpenSSL/03_Message_Digests/2_HMAC/02.2_HMAC_Right_Aproach/HMAC_EVP.c
+
 #include <stdio.h>
 #include <openssl/evp.h>
 #include <openssl/err.h>
@@ -6,13 +8,26 @@
 //we need to include the openssl hmac header file
 #include <openssl/hmac.h>
 
-#define MAXBUF 1024 // Define the maximum buffer size for reading the file
+//---------------------------------
+// Define the maximum buffer size for reading the file
+#define MAXBUF 1024 
 
+//---------------------------------
 // Function to handle errors by printing them and aborting the program
+// This will be triggered if an OpenSSL function fails
 void handle_errors(){
     ERR_print_errors_fp(stderr);
     abort();
 }
+
+//---------------------------------
+// Main function for HMAC calculation using EVP
+// Steps:
+// 1) Parse arguments
+// 2) Open file
+// 3) Prepare HMAC context
+// 4) Read file and update HMAC
+// 5) Finalize and print the HMAC
 
 int main(int argc, char **argv){
     // Check if the correct number of arguments is provided
@@ -33,54 +48,56 @@ int main(int argc, char **argv){
     // Load all digest and cipher algorithms (deprecated since version 1.1.0)
     OpenSSL_add_all_algorithms();
 
-    /*------------------------------------------------------*/
-    /*--------------------Body of the hashing---------------*/
+    //---------------------------------
+    // Body of the hashing: setting up the HMAC context and computing the final value
 
-
-    //a key of 16 ASCII characters
+    // A key of 16 ASCII characters
     unsigned char key[] = "1234567887654321";
-    //we need to create a structure for the key
-    //we declare it as a pointer to the EVP_PKEY structure
+
+    // We need to create a structure for the key as a pointer to the EVP_PKEY structure
     EVP_PKEY *hmac_key = EVP_PKEY_new_mac_key(EVP_PKEY_HMAC, NULL, key, strlen(key));
     
-    //now we need to create the structure for the context
+    // Now we create the structure for the digest context
     EVP_MD_CTX *hmac_ctx = EVP_MD_CTX_new();
 
-    //now we need to initialize the context
-    //the second null is to compute the digital signature
+    // Initialize the context for HMAC with SHA-256
     if(!EVP_DigestSignInit(hmac_ctx, NULL, EVP_sha256(), NULL, hmac_key))
         handle_errors();
 
     int n_read;
     unsigned char buffer[MAXBUF];
     
+    // Read the file in chunks of size MAXBUF and update the HMAC
     while(n_read = fread(buffer, 1, MAXBUF, f_in) > 0){
-        //we have now read MAXBUF data from the file
-        //the buffer contains the data read from the file 
+        // We have now read data from the file into the buffer
         if(!EVP_DigestSignUpdate(hmac_ctx, buffer, n_read))
             handle_errors();
     }
 
-    //the finalization requires the usage of a buffer to store the final value
-    //has to be as big as the output of the hash function that we are using
+    // The finalization requires a buffer to store the final value
+    // It must be as large as the output of the chosen hash (SHA-256 in this case)
     unsigned char hmac_value[EVP_MD_size(EVP_sha256())];
 
-    //an integer used to store the length of the hmac value
+    // An integer used to store the length of the HMAC value
     int hmac_len;
 
-    //the parameters here are the context, the buffer to store the final value and the length of the final value
+    // Finish computing the HMAC and store the result in hmac_value
     if(!EVP_DigestSignFinal(hmac_ctx, hmac_value, &hmac_len))
         handle_errors();
 
-    //now we need to free the context
+    // Now we free the context
     EVP_MD_CTX_free(hmac_ctx);
 
-    printf("The HMAC is:");
+    //---------------------------------
+    // Print the computed HMAC in a readable hexadecimal format
+    printf("The HMAC is: ");
     for(int i = 0; i < 32; i++){
         printf("%02x",hmac_value[i]);
     }
     printf("\n");
 
+    //---------------------------------
+    // Clean-up operations
     // Clean up the cipher data (deprecated since version 1.1.0)
     CRYPTO_cleanup_all_ex_data();
     // Remove error strings (deprecated since version 1.1.0)
