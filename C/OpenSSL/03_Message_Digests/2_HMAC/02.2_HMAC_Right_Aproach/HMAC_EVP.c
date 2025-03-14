@@ -1,5 +1,3 @@
-//// filepath: /home/ren/PERSONAL_DIRECTORY/CyberSecurity/First_Year/Second_Semester/CRYPTOGRAPHY/C/OpenSSL/03_Message_Digests/2_HMAC/02.2_HMAC_Right_Aproach/HMAC_EVP.c
-
 #include <stdio.h>
 #include <openssl/evp.h>
 #include <openssl/err.h>
