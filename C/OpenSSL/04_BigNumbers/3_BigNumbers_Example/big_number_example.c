@@ -82,7 +82,7 @@ int main(){
     //we do a test with a non prime number
     BN_set_word(prime2, 16);
 
-
+    
 
     //we do the same check
     if(BN_is_prime_ex(prime2, 16, NULL, NULL))
@@ -92,9 +92,8 @@ int main(){
     
     //the last thing is another function
     //this function returns the number of bytes that are needed to represent the number
-    printf("\nByte representation sizes:\n");
-    printf(" - Prime 1: %d bytes\n", BN_num_bytes(prime1));
-    printf(" - Prime 2: %d bytes\n", BN_num_bytes(prime2));
+    printf("bits prime 1: %d\n", BN_num_bytes(prime1));
+    printf("bits prime 2: %d\n", BN_num_bytes(prime2));
 
     //this is important because we may have numbers that have at least the amount of required bits
     //but we need to know the exact numbers in some cases
