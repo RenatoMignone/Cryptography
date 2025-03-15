@@ -19,6 +19,18 @@ where "keykeykeykeykeykey" is an ASCII string (no quotation marks)
 FLAG = CRYPTO25{9453ac565269a96ea3ea583b15b410111b42ae03d1054a02fe4ba4b1029734d3}
 */
 
+/*
+
+   IN order to achieve this objective here, we start defining the key to 
+   asign to the HMAC-SHA256 protocol. In the beginning of the code in fact
+   after having read the single files, we give the key to the algorithm.
+
+   The professor here is asking to compute so the HMAC-SHA256 over this value:
+   "file1 | file2", so we do not need to include the key itself also in the computation
+   because it is already defined in the algorithm structure
+
+*/
+
 
 #include <stdio.h>
 #include <stdlib.h>
