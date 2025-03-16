@@ -43,6 +43,37 @@ CRYPTO25{00:c1:08:c9:57:09:e0:73:72:7d:b4:5e:4b:4b:20:bf:3c:
 */
 
 
+/*==================================================================================*/
+/*==================================================================================*/
+
+/*
+Step 1: Understanding the Problem Statement
+
+The CTF provided two hexadecimal numbers formatted with colons, and we were 
+asked to "find the missing parameter using BIGNUM primitives."
+
+From this, I identified key hints:
+
+- These values are large numbers, suggesting they could be related to cryptographic keys.
+- BIGNUM primitives are mentioned, which strongly suggests operations on large integers, 
+  commonly used in RSA, Diffie-Hellman, or ECC.
+- The phrase "missing parameter" indicates that we must compute something related to the given numbers.
+
+
+Step 2: Examining the Lengths and Structure of the Data
+
+The given hexadecimal numbers are very large (hundreds of bytes).
+They are formatted with colons (:), which is commonly used in OpenSSL output for keys.
+One number is slightly shorter than the other.
+This hints at possible RSA-related values because:
+
+- The modulus N is typically longer than the two prime factors (p and q) combined.
+
+*/
+
+/*==================================================================================*/
+/*==================================================================================*/
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -50,6 +81,9 @@ CRYPTO25{00:c1:08:c9:57:09:e0:73:72:7d:b4:5e:4b:4b:20:bf:3c:
 #include <ctype.h>
 #include <openssl/bn.h>
 
+
+/*==================================================================================*/
+/*==================================================================================*/
 /*
  * Function: remove_colons
  * -------------------------
@@ -69,6 +103,9 @@ void remove_colons(const char *input, char *output) {
     *output = '\0';
 }
 
+
+/*==================================================================================*/
+/*==================================================================================*/
 /*
  * Function: insert_colons
  * -------------------------
@@ -90,6 +127,9 @@ void insert_colons(const char *hex_str, char *output) {
     output[j] = '\0';
 }
 
+
+/*==================================================================================*/
+/*==================================================================================*/
 /*
  * Function: str_to_lower
  * -------------------------
@@ -101,8 +141,14 @@ void str_to_lower(char *str) {
     }
 }
 
+/*==================================================================================*/
+/*==================================================================================*/
 int main(void) {
     // Provided colon-separated hexadecimal strings.
+
+    /*==================================================================================*/
+    /*==================================================================================*/
+    //this first value is the n parameter of RSA 
     const char *n_str = "00:9e:ee:82:dc:2c:d4:a0:0c:4f:5a:7b:86:63:b0:c1:ed:06:77:fc:"
                         "eb:de:1a:23:5d:f4:c3:ff:87:6a:7d:ad:c6:07:fa:a8:35:f6:ae:05:"
                         "03:57:3e:22:36:76:d5:0d:57:4f:99:f9:58:ad:63:7a:e7:45:a6:aa:"
@@ -116,6 +162,8 @@ int main(void) {
                         "d7:44:c7:28:54:67:84:ee:73:92:65:f0:1c:e8:1e:6d:4d:95:65:b4:"
                         "c8:4f:b8:04:62:58:2b:ee:32:64:a0:a7:dc:99:25:0e:50:53:76:bc:"
                         "30:db:71:5e:93:d6:9f:1f:88:1c:76:5d:82:c8:59:39:51";
+
+    //this second value is the p parameter of RSA 
     const char *p_str = "00:d2:c6:01:32:6b:4c:4b:85:5f:52:7b:b7:8e:d6:8a:e4:c8:76:7e:"
                         "6b:c9:24:9a:3e:ca:cd:2f:c9:b8:75:d4:f9:71:11:e1:cf:be:62:d3:"
                         "2c:5f:f9:fd:9b:fa:ed:62:f3:df:44:c7:57:fb:ee:9b:b2:32:cb:54:"
@@ -124,14 +172,19 @@ int main(void) {
                         "7c:a9:85:8a:c2:2b:4d:d4:e6:f1:89:e5:b0:42:54:a0:5f:3c:dd:c7:"
                         "64:33:05:11:fb:ee:8b:26:07";
 
-    /* Step 1: Preprocess the Input Strings
-     * Use stack-allocated buffers to hold the colon-free strings.
-     */
+    /*==================================================================================*/
+    /*==================================================================================*/
+    /* 
+        Step 1: Preprocess the Input Strings
+        Use stack-allocated buffers to hold the colon-free strings.
+    */
     char n_hex[strlen(n_str) + 1];
     char p_hex[strlen(p_str) + 1];
     remove_colons(n_str, n_hex);
     remove_colons(p_str, p_hex);
 
+    /*==================================================================================*/
+    /*==================================================================================*/
     /* Step 2: Convert Hex Strings to BIGNUMs */
     BIGNUM *n = NULL, *p = NULL, *q = BN_new();
     BN_hex2bn(&n, n_hex);
@@ -149,6 +202,8 @@ int main(void) {
         exit(1);
     }
 
+    /*==================================================================================*/
+    /*==================================================================================*/
     /* Step 3: Convert q to a Hex String and Format It */
     char *q_hex = BN_bn2hex(q);  // Allocated by BN_bn2hex; free with OPENSSL_free.
     str_to_lower(q_hex);
@@ -179,18 +234,26 @@ int main(void) {
     // For every two hex digits we insert one colon (except before the first pair).
     int formatted_len = target_len + (target_len / 2 - 1) + 1; 
     char formatted_q[formatted_len];
+
+    //now we format the string again with the colons
     insert_colons(q_hex_padded, formatted_q);
 
+    /*==================================================================================*/
+    /*==================================================================================*/
     /* Step 4: Output the Flag */
     printf("CRYPTO25{%s}\n", formatted_q);
 
+    /*==================================================================================*/
+    /*==================================================================================*/
     /* Step 5: Cleanup */
     BN_free(n);
     BN_free(p);
     BN_free(q);
     BN_free(rem);
     BN_CTX_free(ctx);
-    OPENSSL_free(q_hex);
+
+    /*==================================================================================*/
+    /*==================================================================================*/
 
     return 0;
 }
