@@ -1,170 +1,140 @@
+/*
+
+After Having executed this code, verify the signature with this command:
+
+openssl dgst -sha256 -verify public.pem -signature signature.bin RSA_ds.c
+
+*/
+
+
 #include <stdio.h>
 #include <openssl/err.h>
 #include <openssl/rsa.h> 
 #include <string.h>
 #include <openssl/pem.h>
+#include <openssl/evp.h>
 
+#define MAXBUFFER 1024
 
+/*--------------------------------------------------------*/
 void handle_errors(void)
 {
     ERR_print_errors_fp(stderr);
     abort();
 }
 
-int main(){
+/*--------------------------------------------------------*/
+//argv[1] is the name of the file to sign
+//argv[2] is the name of the file where the private key is stored
+
+int main(int argc, char **argv){
 
     ERR_load_crypto_strings();
     OpenSSL_add_all_algorithms();
 
-    //we first need to create space for RSA structure
-    //this data structure is defined as a collection of BigNums
-    RSA *rsa_keypair;
 
-    //Big number public exponent
-    BIGNUM *bne = BN_new();
-    
-    //the most used public parameters are 3,17,65537
-    if(!BN_set_word(bne, RSA_F4))
-        handle_errors();
-
-    //we need to create the RSA structure
-    rsa_keypair = RSA_new();
-
-    //the second parameter is the num of bits
-    //the third and fourth parameters are the public exponent and the callback
-    //the result keys will be stored in rsa_keypair structure
-    if(!RSA_generate_key_ex(rsa_keypair, 2048, bne, NULL))
-        handle_errors();
-
-        
-    //we need to create a file to store the keys
-    FILE *rsa_file;
-    
-    if((rsa_file = fopen("private.pem", "w")) == NULL){
-        fprintf(stderr, "Error generating the file\n");
-        handle_errors();
+    /*--------------------------------------------------------*/
+    /*--------------------------------------------------------*/
+    //check the number of arguments
+    if(argc != 3){
+        fprintf(stderr, "Usage: %s <file to sign> <private key>\n", argv[0]);
+        return 1;
     }
 
-    //we need to write the private key to the file
-    //the first parameter is the file pointer
-    //then the rsa structure
-    //the third parameter is the encryption algorithm
-    //the fourth parameter is the password
-    //the fifth parameter is the password length
-    //the sixth parameter is the callback
-    //the seventh parameter is the callback argument
-    if(!PEM_write_RSAPrivateKey(rsa_file, rsa_keypair, NULL, NULL, 0, NULL, NULL))
-        handle_errors();
-
-    fclose(rsa_file);
-
-
-    //now we do the same but with the public key
-    if((rsa_file = fopen("public.pem", "w")) == NULL){
-        fprintf(stderr, "Error generating the file\n");
-        handle_errors();
-    }
-
-    if(!PEM_write_RSAPublicKey(rsa_file, rsa_keypair))
-        handle_errors();
-    
-    fclose(rsa_file);
-
-
-    /*------------------------------------------------------------*/
-    /*------------------------------------------------------------*/
-    //create the message to encrypt.
-    unsigned char message[] = "This is the message to encrypt\n";
-
-    //The maximum amount of data that can be encrypted with RSA 
-    //is the key size in bytes minus 41, or 11, which is the padding size
-
-    //we allocate room to save the encrypted message
-    //we need to allocate as many bits as the final key size
-    unsigned encrypted_message[RSA_size(rsa_keypair)];
-
-    //since the function under will return the length of the encrypted message
-    //we need to store it
-    int encrypted_length;
-
-
-    //the function to perform the encryption
-    if( (encrypted_length = RSA_public_encrypt(strlen(message),                 //this one is the length of the message to enc
-                                                      message,                  //the second parameter is the message
-                                                      encrypted_message,        //this one is the variable that we allocated to store the enc message
-                                                      rsa_keypair,              //the key that we are going to use. This function is able to take from this data structure the public key
-                                                      RSA_PKCS1_OAEP_PADDING)   //this field is the padding. The most used is RSA_PKCS1_PADDING
-        ) ==-1)
-        handle_errors();
-
-
-    //we need to create a file to store the encrypted message
-    FILE *out;
-
-    //we open the file in write mode
-    if((out = fopen("encrypted.enc", "w")) == NULL){
-        fprintf(stderr, "Error generating the file\n");
-        abort();
-    }
-
-    //we write the encrypted message to the file
-    if(fwrite(encrypted_message, 1, encrypted_length, out) < encrypted_length){
-        fprintf(stderr, "Error writing the file\n");
-        abort();
-    }
-
-    fclose(out);
-
-    //we print a message to the user
-    printf("The message was encrypted successfully\n");
-
-
-    /*------------------------------------------------------------*/
-    /*------------------------------------------------------------*/
-    //now we want to decrypt the message
-
-
-    printf("Reading the encrypted file...\n");
-
-    //we need to create a file to store the encrypted message
-    FILE *in;
-
-    //we open the file in write mode
-    if((in = fopen("encrypted.enc", "r")) == NULL){
+    //file to sign
+    FILE *f_in;
+    if((f_in = fopen(argv[1], "r")) == NULL){
         fprintf(stderr, "Error reading the file\n");
-        abort();
+        return 1;
     }
 
-    //the encrypted_message can be used again, so we reuse it
-    //here we expect as many data as the value of RSA_size(rsa_keypair)
-    if( ( encrypted_length = fread(encrypted_message, 1, RSA_size(rsa_keypair), in)) != RSA_size(rsa_keypair)){
-        handle_errors();
+    //private key file
+    FILE *f_key;
+    if((f_key = fopen(argv[2], "r")) == NULL){
+        fprintf(stderr, "Error reading the file\n");
+        return 1;
     }
-    fclose(in);
 
-    //now we need to reserve space for the decrypted message
-    unsigned char decprypted_message[RSA_size(rsa_keypair)];
+    /*--------------------------------------------------------*/
+    /*--------------------------------------------------------*/
+    //DigestSign interface --> EVP_PKEY 
 
-    //we need to decrypt the message
-    if(RSA_private_decrypt(encrypted_length,       //the length of the encrypted message
-                        encrypted_message,      //the encrypted message
-                        decprypted_message,     //the variable to store the decrypted message
-                        rsa_keypair,            //the key to use, in this case the private key
-                        RSA_PKCS1_OAEP_PADDING  //the padding to use, in this case the same as the encryption
-    ) == -1)
+    EVP_PKEY *private_key = PEM_read_PrivateKey(f_key, NULL, NULL, NULL);
+
+    //we close the file of the key since we do not need it anymore
+    fclose(f_key);
+
+    EVP_MD_CTX *signature_ctx = EVP_MD_CTX_new();
+
+    //the first parameter is the context
+    //the third parameter is the algorithm to use
+    if(!EVP_DigestSignInit(signature_ctx, NULL, EVP_sha256(), NULL, private_key))
         handle_errors();
 
-    printf("\nThe decrypted message is: %s\n", decprypted_message);
+    //we need to read from the file that we want to sign
+    unsigned char buffer[MAXBUFFER];
+
+    //we need to create a variable for the number of data read
+    size_t n_read;
+
+    //the 2 parameter is the number of elements
+    while((n_read = fread(buffer, 1, MAXBUFFER, f_in)) > 0){
+        //the first parameter is the context
+        //the second parameter is the data to sign
+        //the third parameter is the length of the data
+        if(!EVP_DigestSignUpdate(signature_ctx, buffer, n_read))
+            handle_errors();
+    }
+
+    fclose(f_in);
+
+    //now we need to call the finalization function 2 times
+    //the first to finalize the digest
+    //the second one to compute the signature on the previously finalized digest
+
+    //we create room to save the result
+    //thanks to the EVP_PKEY we can know the size of the private key
+    unsigned char signature[EVP_PKEY_size(private_key)];
+
+    //we create space to store the length of the signature
+    //and the length of the digest
+    size_t sig_len;
+    size_t dgst_len;
+
+    //the first parameter is the context
+    //we save the result in the dgst_len variable
+    if(!EVP_DigestSignFinal(signature_ctx, NULL, &dgst_len))
+        handle_errors();
+
+    //then we call the function again to compute the signature
+    //the second parameter is where we want to store the signature
+    //the third parameter is the length of the signature 
+    if(!EVP_DigestSignFinal(signature_ctx, signature, &sig_len))
+        handle_errors();
+
+    EVP_MD_CTX_free(signature_ctx);
     
+    //we write the signature to a file
+    FILE *f_out;
+    if((f_out = fopen("signature.bin", "w")) == NULL){
+        fprintf(stderr, "Error opening the signature file\n");
+        exit(1);
+    }
+
+    if(fwrite(signature, 1, sig_len, f_out) < sig_len){
+        fprintf(stderr, "Error writing the signature file\n");
+        exit(1);
+    }
+
+    fclose(f_out);
+
+    printf("Signature written to signature.bin\n");
 
 
-    /*------------------------------------------------------------*/
-    /*------------------------------------------------------------*/
-
-    RSA_free(rsa_keypair);
-
+    /*--------------------------------------------------------*/
+    /*--------------------------------------------------------*/
     CRYPTO_cleanup_all_ex_data();
     ERR_free_strings();
     
     return 0;
-}
+}    
