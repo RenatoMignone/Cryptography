@@ -1,3 +1,4 @@
+/*=======================================================================*/
 /*
 
 Given the secret (represented as a C variable)
@@ -22,16 +23,19 @@ CRYPTO25{312f7c144f845211ea18aa82115ae5848dee7036d9527ad014def7d0d495ec54b4f998d
 */
 
 
-
+/*=======================================================================*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <openssl/evp.h>
 
+/*=======================================================================*/
 // Define the secret for the keyed digest.
 unsigned char secret[] = "this_is_my_secret";
 
+/*=======================================================================*/
 int main(int argc, char **argv) {
+    /*=======================================================================*/
     // Check for proper usage; ensure one input file is provided.
     if (argc != 2) {
         fprintf(stderr, "Usage: %s input_file\n", argv[0]);
@@ -46,6 +50,7 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
+    /*=======================================================================*/
     // Create a new EVP message digest context.
     //here we use the same context of the file with the SHA1
     EVP_MD_CTX *SHA512_ctx = EVP_MD_CTX_new();
@@ -55,6 +60,7 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
+    /*=======================================================================*/
     // Initialize the digest context with the SHA512 algorithm.
     //here we are performing the initialization of the context with the SHA512 algorithm
     if (!EVP_DigestInit_ex(SHA512_ctx, EVP_sha512(), NULL)) {
@@ -64,9 +70,12 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
+    /*=======================================================================*/
     // Determine the length of the secret.
     size_t secret_len = strlen(secret);
 
+    /*=======================================================================*/
+    /*============================= FIRST UPDATE ============================*/
     // First Pass: Update the digest with the secret.
     // The first Update process is performed over the secret
     // this because as read in the track the secret is the first element of the concatenation
@@ -80,6 +89,9 @@ int main(int argc, char **argv) {
     // Second Pass: Read and process the input file in chunks.
     // Here we compute as always the digest of the file in chunks
     unsigned char buffer[1024];
+
+    /*=======================================================================*/
+    /*============================= SECOND UPDATE ===========================*/
 
     //this is the variable that will store the number of bytes read from the file
     size_t bytes_read;
@@ -95,16 +107,18 @@ int main(int argc, char **argv) {
     // Close the input file.
     fclose(fp);
 
+    /*=======================================================================*/
+    /*============================= THIRD UPDATE ============================*/
     // Third Pass: Update the digest with the secret again.
     // In this case the last process will be performed with the secret itself
     // This because the secret is the last element of the concatenation
-
     if (!EVP_DigestUpdate(SHA512_ctx, secret, secret_len)) {
         fprintf(stderr, "EVP_DigestUpdate for secret second update failed\n");
         EVP_MD_CTX_free(SHA512_ctx);
         return EXIT_FAILURE;
     }
 
+    /*=======================================================================*/
     // Finalize the digest calculation.
     // The final digest is stored in 'digest', and digest_len holds its length.
     unsigned char digest[EVP_MAX_MD_SIZE];
@@ -115,6 +129,7 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
+    /*=======================================================================*/
     // Clean up the EVP context.
     EVP_MD_CTX_free(SHA512_ctx);
 
@@ -125,6 +140,8 @@ int main(int argc, char **argv) {
         printf("%02x", digest[i]);
     }
     printf("}\n");
+
+    /*=======================================================================*/
 
     return EXIT_SUCCESS;
 }

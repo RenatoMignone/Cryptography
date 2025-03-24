@@ -59,6 +59,8 @@ unsigned char *base64_decode(const char *input, int *out_len) {
 }
 
 int main(void){
+
+    /*=======================================================================*/
     /* Hardcoded parameters based on the command line:
        key:  0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
        iv:   11111111111111112222222222222222
@@ -67,13 +69,16 @@ int main(void){
     const char *hex_key = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
     const char *hex_iv  = "11111111111111112222222222222222";
 
+    /*=======================================================================*/
     /* Convert hex key to binary */
+    // we divide by 2 here because each byte is represented by 2 hex characters
     int key_len = strlen(hex_key) / 2;
     unsigned char key[key_len];
     for (int i = 0; i < key_len; i++){
         sscanf(&hex_key[2 * i], "%2hhx", &key[i]);
     }
 
+    /*=======================================================================*/
     /* Convert hex IV to binary */
     int iv_len = strlen(hex_iv) / 2;
     unsigned char iv[iv_len];
@@ -81,6 +86,7 @@ int main(void){
         sscanf(&hex_iv[2 * i], "%2hhx", &iv[i]);
     }
 
+    /*=======================================================================*/
     /* Decode the base64 ciphertext */
     int cipher_len;
     unsigned char *cipher_bytes = base64_decode(b64_ciphertext, &cipher_len);
@@ -89,6 +95,17 @@ int main(void){
         return 1;
     }
 
+    //so now inside the cipher_bytes we have the binary representation of the base64 encoded string
+
+    /*=======================================================================*/
+    /*
+        Now that we have:
+           - the key in a binary format
+           - the iv in a binary format
+           - the cipher_bytes decoded from the base64 encoded string
+        we can start the decryption process
+    */
+
     /* Initialize OpenSSL libraries */
     ERR_load_crypto_strings();
     OpenSSL_add_all_algorithms();
@@ -96,15 +113,20 @@ int main(void){
     EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
     if(!ctx) handle_errors();
 
+    /*=======================================================================*/
     /* Initialize decryption context using ChaCha20 */
     if(!EVP_CipherInit(ctx, EVP_chacha20(), key, iv, DECRYPT))
         handle_errors();
 
+    /*=======================================================================*/
+    //We perform the actual decryption of the decoded bytes here
     unsigned char plaintext[MAX_BUFFER];
     int out_len1 = 0;
     if(!EVP_CipherUpdate(ctx, plaintext, &out_len1, cipher_bytes, cipher_len))
         handle_errors();
 
+    /*=======================================================================*/
+    //We finalize the decryption process here
     int out_len2 = 0;
     if(!EVP_CipherFinal_ex(ctx, plaintext + out_len1, &out_len2))
         handle_errors();
@@ -114,6 +136,8 @@ int main(void){
 
     printf("Decrypted text (flag): %s\n", plaintext);
 
+
+    /*=======================================================================*/
     EVP_CIPHER_CTX_free(ctx);
     CRYPTO_cleanup_all_ex_data();
     ERR_free_strings();

@@ -6,8 +6,14 @@ The ciphertext is base64 encoded and the key and IV are hardcoded in the code.
 The code decodes the base64 encoded ciphertext and decrypts it using the ARIA algorithm. 
 The decrypted plaintext is then printed to the console.
 
+FLAG:
+
+CRYPTO{H1d1ng4lgo1sUs3l3ss-EVP_aria_128_cbc}
+
 */
 
+
+/*=======================================================================*/
 #include <stdio.h>
 #include <string.h>
 
@@ -17,11 +23,14 @@ The decrypted plaintext is then printed to the console.
 
 #define DECRYPT 0
 
+
+/*=======================================================================*/
 void handle_errors() {
     ERR_print_errors_fp(stderr);
     abort();
 }
 
+/*=======================================================================*/
 // Base64 decoding function using OpenSSL's BIO
 int base64_decode(const char *input, unsigned char *output, int output_len) {
 
@@ -46,6 +55,7 @@ int base64_decode(const char *input, unsigned char *output, int output_len) {
 
 }
 
+/*=======================================================================*/
 int main() {
 
     EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
@@ -55,6 +65,7 @@ int main() {
     char base64_ciphertext[] = "ZZJ+BKJNdpXA2jaX8Zg5ItRola18hi95MG8fA/9RPvg=";
 
     
+    /*=======================================================================*/
     // Base64 decode the ciphertext
     // Calculate the maximum possible length of the decoded ciphertext.
     // Base64 encoding uses 4 characters to represent 3 bytes of binary data.
@@ -70,28 +81,33 @@ int main() {
         abort();
     }
 
+    /*=======================================================================*/
     if(!EVP_CipherInit(ctx, EVP_aria_128_cbc(), key, iv, DECRYPT))
         handle_errors();
 
+    /*=======================================================================*/
     unsigned char plaintext[ciphertext_len];
     int plaintext_len = 0, len;
 
     if(!EVP_CipherUpdate(ctx, plaintext, &len, ciphertext, ciphertext_len))
         handle_errors();
     plaintext_len += len;
-    printf("\nAfter update: %d\n", plaintext_len);
 
+    /*=======================================================================*/
     if(!EVP_CipherFinal_ex(ctx, plaintext + plaintext_len, &len))
         handle_errors();
     plaintext_len += len;
     printf("After final: %d\n", plaintext_len);
 
+    /*=======================================================================*/
     EVP_CIPHER_CTX_free(ctx);
     
-    printf("\nDecrypted Flag: ");
+    printf("\nFlag: CRYPTO{");
     for(int i = 0; i < plaintext_len; i++)
         printf("%c", plaintext[i]);
-    printf("\n");
+    printf("EVP_aria_128_cbc}\n");
+    
+    /*=======================================================================*/
 
     return 0;
 

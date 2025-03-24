@@ -20,6 +20,7 @@ When you succeed, build the flag in this way (Python-style string concatenation)
 FLAG: CRYPTO25{H1d1ng4lgo1sUs3l3ss-EVP_aria_128_cbc}
 */
 
+/*=======================================================================*/
 
 #include <stdio.h>
 #include <string.h>
@@ -30,11 +31,13 @@ FLAG: CRYPTO25{H1d1ng4lgo1sUs3l3ss-EVP_aria_128_cbc}
 
 #define DECRYPT 0
 
+/*=======================================================================*/
 void handle_errors() {
     ERR_print_errors_fp(stderr);
     abort();
 }
 
+/*=======================================================================*/
 // Base64 decoding function using OpenSSL's BIO
 int base64_decode(const char *input, unsigned char *output, int output_len) {
 
@@ -59,7 +62,11 @@ int base64_decode(const char *input, unsigned char *output, int output_len) {
 
 }
 
+/*=======================================================================*/
 // Structure to hold callback data.
+// In this struct we store the ciphertext, key, and IV.
+// It is needed to pass this data to the callback function.
+// The callback function will use this data to attempt decryption, with the current cipher.
 typedef struct {
     unsigned char *ciphertext;
     int ciphertext_len;
@@ -68,32 +75,47 @@ typedef struct {
 } callback_data_t;
 
 
+/*=======================================================================*/
 // Callback function for EVP_CIPHER_do_all.
 // It attempts to decrypt the provided ciphertext using the current cipher.
 // If decryption is successful, the algorithm name and the decrypted result are printed.
 void cipher_callback(const EVP_CIPHER *cipher, const char *algo, const char *unused, void *userdata) {
+    
+    /*=======================================================================*/
+    // Cast the userdata pointer to the callback data struct.
     callback_data_t *data = (callback_data_t *)userdata;
     
     EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
     if (!ctx)
         return;
     
+    /*=======================================================================*/
     // Initialize decryption context with the current cipher, key, and IV.
     if (!EVP_CipherInit_ex(ctx, cipher, NULL, data->key, data->iv, DECRYPT)) {
         EVP_CIPHER_CTX_free(ctx);
         return;
     }
     
+    /*=======================================================================*/
     // Allocate a buffer for the decrypted output (add extra space for possible padding).
+    // here the cipher variable will be used to get the block size of the current cipher used by the DO_ALL function
     int block_size = EVP_CIPHER_block_size(cipher);
+
+    // we define the size of the output buffer as the size of the ciphertext plus the block size
     int outbuf_size = data->ciphertext_len + block_size;
+
+    // Allocate memory for the plaintext, so we will do it dynamically because we don't know the size of the plaintext
+    // This means that based on the block size of the cipher we will allocate the memory for the plaintext
     unsigned char *plaintext = malloc(outbuf_size);
     if (!plaintext) {
         EVP_CIPHER_CTX_free(ctx);
         return;
     }
+    // memset the plaintext buffer to 0, so we can be sure that the buffer is clean
     memset(plaintext, 0, outbuf_size);
     
+    /*=======================================================================*/
+    // Decrypt the ciphertext.
     int out_len = 0, total_len = 0;
     
     // Attempt decryption (update phase).
@@ -104,6 +126,7 @@ void cipher_callback(const EVP_CIPHER *cipher, const char *algo, const char *unu
     }
     total_len += out_len;
     
+    
     // Finalize decryption (this step verifies padding correctness).
     if (!EVP_CipherFinal_ex(ctx, plaintext + total_len, &out_len)) {
         free(plaintext);
@@ -111,18 +134,21 @@ void cipher_callback(const EVP_CIPHER *cipher, const char *algo, const char *unu
         return;
     }
     total_len += out_len;
-    
+
+    /*=======================================================================*/
     // Ensure null termination for printing as a string.
     if(total_len < outbuf_size)
         plaintext[total_len] = '\0';
 
+    /*=======================================================================*/
     // Print the current algorithm name.
     printf("Algorithm: %s\n", algo);
     
+    /*=======================================================================*/
     // Print the decrypted result.
     printf("Decrypted result: %s\n\n", plaintext);
-    // printf("%s\n\n", plaintext);
 
+    /*=======================================================================*/
     free(plaintext);
     EVP_CIPHER_CTX_free(ctx);
 }
@@ -132,10 +158,11 @@ void cipher_callback(const EVP_CIPHER *cipher, const char *algo, const char *unu
 /*------------------------------------------ MAIN FUNCTION ---------------------------------------*/
 int main() {
 
-
+    /*=======================================================================*/
     char key[] = "0123456789ABCDEF";
     char iv[] = "0123456789ABCDEF";
     char base64_ciphertext[] = "ZZJ+BKJNdpXA2jaX8Zg5ItRola18hi95MG8fA/9RPvg=";
+    /*=======================================================================*/
 
     // Base64 decode the ciphertext
     // Calculate the maximum possible length of the decoded ciphertext.
@@ -152,20 +179,25 @@ int main() {
         abort();
     }
 
+    /*=======================================================================*/
     // Prepare callback data.
+    // We allocate memeory for the struct and copy the ciphertext, key, and IV into it.
     callback_data_t data;
     data.ciphertext = ciphertext;
     data.ciphertext_len = ciphertext_len;
     data.key = (unsigned char *)key;
     data.iv = (unsigned char *)iv;
 
+    /*=======================================================================*/
     // Initialize OpenSSL algorithms and load error strings.
     OpenSSL_add_all_algorithms();
     ERR_load_crypto_strings();
 
+    /*=======================================================================*/
     // Iterate over all available ciphers and try to decrypt the ciphertext.
     EVP_CIPHER_do_all(cipher_callback, &data);
 
+    /*=======================================================================*/
     // Cleanup.
     EVP_cleanup();
     ERR_free_strings();

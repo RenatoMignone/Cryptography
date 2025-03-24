@@ -32,6 +32,7 @@ FLAG = CRYPTO25{9453ac565269a96ea3ea583b15b410111b42ae03d1054a02fe4ba4b1029734d3
 */
 
 
+/*=======================================================================*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -42,6 +43,7 @@ FLAG = CRYPTO25{9453ac565269a96ea3ea583b15b410111b42ae03d1054a02fe4ba4b1029734d3
 // Define the maximum buffer size for reading the file
 #define MAXBUF 1024 
 
+/*=======================================================================*/
 // Function to handle errors by printing them and aborting the program.
 // This is triggered if an OpenSSL function fails.
 void handle_errors(){
@@ -49,6 +51,7 @@ void handle_errors(){
     abort();
 }
 
+/*=======================================================================*/
 int main(int argc, char **argv){
     // We expect exactly two file names as parameters.
     if(argc != 3){
@@ -69,14 +72,13 @@ int main(int argc, char **argv){
         exit(1);
     }
 
+    /*=======================================================================*/
     // Load human-readable error strings for libcrypto.
     ERR_load_crypto_strings();
     // Load all digest and cipher algorithms.
     OpenSSL_add_all_algorithms();
 
-    //---------------------------------
-    // Prepare the HMAC context
-
+    /*=======================================================================*/
     // Secret key (ASCII string)
     unsigned char key[] = "keykeykeykeykeykey";
     // Create an EVP_PKEY structure for the HMAC key using the secret.
@@ -86,6 +88,7 @@ int main(int argc, char **argv){
         exit(1);
     }
     
+    /*=======================================================================*/
     // Create a new message digest context for HMAC operations.
     EVP_MD_CTX *hmac_ctx = EVP_MD_CTX_new();
     if (!hmac_ctx) {
@@ -93,6 +96,7 @@ int main(int argc, char **argv){
         exit(1);
     }
 
+    /*=======================================================================*/
     // Initialize the HMAC context with SHA-256.
     if(!EVP_DigestSignInit(hmac_ctx, NULL, EVP_sha256(), NULL, hmac_key))
         handle_errors();
@@ -100,7 +104,7 @@ int main(int argc, char **argv){
     int n_read;
     unsigned char buffer[MAXBUF];
     
-    //---------------------------------
+    /*=======================================================================*/
     // Process the first file:
     // Read the file in chunks and update the HMAC.
     while ((n_read = fread(buffer, 1, MAXBUF, f1)) > 0) {
@@ -109,7 +113,7 @@ int main(int argc, char **argv){
     }
     fclose(f1); // Close the first file.
 
-    //---------------------------------
+    /*=======================================================================*/
     // Process the second file:
     // Read the file in chunks and update the HMAC.
     while ((n_read = fread(buffer, 1, MAXBUF, f2)) > 0) {
@@ -118,9 +122,8 @@ int main(int argc, char **argv){
     }
     fclose(f2); // Close the second file.
 
-    //---------------------------------
+    /*=======================================================================*/
     // Finalize the HMAC computation
-
     // Buffer to store the HMAC result. Its size is determined by SHA-256.
     unsigned char hmac_value[EVP_MD_size(EVP_sha256())];
     // Use size_t for hmac_len as required by EVP_DigestSignFinal.
@@ -134,7 +137,7 @@ int main(int argc, char **argv){
     // Free the HMAC context.
     EVP_MD_CTX_free(hmac_ctx);
 
-    //---------------------------------
+    /*=======================================================================*/
     // Print the computed HMAC in a readable hexadecimal format as the flag.
     // The flag format is: CRYPTO25{<hmac>}
     printf("CRYPTO25{");
@@ -143,7 +146,7 @@ int main(int argc, char **argv){
     }
     printf("}\n");
 
-    //---------------------------------
+    /*=======================================================================*/
     // Clean-up operations:
     // Clean up the cipher data and error strings.
     CRYPTO_cleanup_all_ex_data();
