@@ -1,51 +1,64 @@
-# Needless to say, you need the proper authorization cookie to get the flag
+#!/usr/bin/env python3
+from pwn import remote
+from Crypto.Util.number import bytes_to_long, long_to_bytes
 
-# nc 130.192.5.212 6552
+HOST = "130.192.5.212"
+PORT = 6552
+BLOCK = 16
 
-from pwn import *
-import sys
-from Crypto.Util.number import long_to_bytes, bytes_to_long
+def leak_blocks(username: bytes):
+    """
+    Open a fresh connection, send `username` at the "Username:" prompt,
+    receive back the ECB‐encrypted cookie as a big integer, split it
+    into 16‐byte blocks, then close.
+    """
+    r = remote(HOST, PORT)
+    r.recvuntil(b"Username: ")
+    r.sendline(username)
+    data = r.recvline().strip()
+    ct = long_to_bytes(int(data))
+    blocks = [ ct[i:i+BLOCK] for i in range(0, len(ct), BLOCK) ]
+    r.close()
+    return blocks
+
+def send_forged_cookie(forged_int: int):
+    """
+    Open a fresh connection, eat the login, then from the menu
+    request the flag using our forged cookie.
+    """
+    r = remote(HOST, PORT)
+    # eat the login prompt
+    r.recvuntil(b"Username: ")
+    r.sendline(b"whatever")
+    r.recvline()            # the server prints us a ciphertext we ignore
+    r.recvuntil(b"> ")      # now we are at the menu
+    r.sendline(b"flag")     # choose the flag command
+    r.recvuntil(b"Cookie: ")
+    r.sendline(str(forged_int).encode())
+    # this line should print: "OK! Your flag: ... "
+    print(r.recvline().decode().strip())
+    r.close()
 
 def main():
-    if len(sys.argv) < 2:
-        print("Usage: python3 exploit.py <REMOTE_IP> <REMOTE_PORT>")
-        return
+    # —————————————————————————————————————————————————————
+    # 1) Leak C1, C2 by making "username="+A*16+"&admin=" exactly 2 blocks
+    u1 = b"A"*16
+    B1 = leak_blocks(u1)
+    C1, C2 = B1[0], B1[1]
 
-    host = sys.argv[1]
-    port = int(sys.argv[2])
+    # —————————————————————————————————————————————————————
+    # 2) Leak the block that encrypts "true"+12×\x0c as a single block
+    #    by choosing a 15‐byte username ending in "true"
+    u2 = b"B"*11 + b"true"
+    B2 = leak_blocks(u2)
+    # With len(u2)=15 we get exactly 3 blocks, and block 2 is "true"+padding
+    C_true = B2[2]
 
-    # Step 1: Get the encrypted cookie with 'admin=false' in a known block
-    p = remote(host, port)
-    p.sendlineafter("Username: ", 'A' * 8)  # Aligns 'admin=false' to block 2
-    encrypted_cookie = int(p.recvline().decode().strip())
-    p.close()
-
-    # Convert to bytes and split into blocks
-    block_size = 16
-    cookie_bytes = long_to_bytes(encrypted_cookie)
-    blocks = [cookie_bytes[i:i+block_size] for i in range(0, len(cookie_bytes), block_size)]
-
-    # Step 2: Generate a block for 'admin=true' (This requires knowing the encryption of 'admin=true' with padding)
-    # This part is theoretical; in practice, you need to craft a username that forces this block.
-    # For this example, we assume we have the correct block from a separate encryption.
-    # Replace the second block (index 1) with the malicious block
-    # For demonstration, this is a placeholder. Actual exploit requires calculating this block.
-    malicious_block = b'\x00' * block_size  # Replace with actual encrypted block
-
-    # Replace the block containing 'admin=false' with 'admin=true'
-    blocks[1] = malicious_block
-
-    # Reconstruct the malicious cookie
-    malicious_cookie = b''.join(blocks)
-    malicious_cookie_int = bytes_to_long(malicious_cookie)
-
-    # Step 3: Submit the malicious cookie
-    p = remote(host, port)
-    p.sendlineafter("Username: ", 'dummy')  # Trigger the login to bypass menu
-    p.sendlineafter("> ", 'flag')
-    p.sendlineafter("Cookie: ", str(malicious_cookie_int))
-    response = p.recvall()
-    print(response.decode())
+    # —————————————————————————————————————————————————————
+    # 3) Splice them together & send to get the flag
+    forged = C1 + C2 + C_true
+    forged_int = bytes_to_long(forged)
+    send_forged_cookie(forged_int)
 
 if __name__ == "__main__":
     main()

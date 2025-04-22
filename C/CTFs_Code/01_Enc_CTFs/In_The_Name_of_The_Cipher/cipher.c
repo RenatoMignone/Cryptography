@@ -16,8 +16,7 @@ In doing the exercise you have found a very relevant function,
 build the flag as "CRYPTO25{" + relevantFunctionName + "}"
 
 
-FLAG:
-CRYPTO25{EVP_get_cipherbyname}
+FLAG: CRYPTO25{EVP_get_cipherbyname}
 
 */
 
