@@ -33,4 +33,4 @@ forged_ciphertext = xor(target_data, keystream[:len(target_data)])
 
 # Forge the token
 forged_token = base64.b64encode(nonce).decode() + "." + base64.b64encode(forged_ciphertext).decode()
-print(f"🔓 Forged admin token: {forged_token}")
+print(f"Forged admin token: {forged_token}")
