@@ -1,7 +1,10 @@
 #Read and understand the code. You'll easily find a way to forge the target cookie.
 #nc 130.192.5.212 6521
 
+#################################################################################
 #FLAG: CRYPTO25{7d3060b2-518e-4f58-a277-7c5f5d6e11ec}
+#################################################################################
+
 
 import base64
 import json
