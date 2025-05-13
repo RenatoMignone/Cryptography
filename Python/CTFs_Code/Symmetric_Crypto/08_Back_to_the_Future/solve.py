@@ -1,3 +1,4 @@
+#################################################################################
 # You may have to make different guesses if you want to go in the past, 
 # but if you understood the code, they would not be too much!
 
@@ -8,7 +9,18 @@
 
 # http://130.192.5.212:6522
 
+#################################################################################
 #FLAG: CRYPTO25{90c01f7e-8cb7-408b-82b4-07e8e7c72d12}
+#################################################################################
+
+#################################################################################
+# Attack: Key Stream Reuse
+#################################################################################
+
+#################################################################################
+# Attack Description: The attacker exploits the reuse of the ChaCha20 keystream 
+# (same key and nonce in session) to forge arbitrary cookies and obtain the flag.
+#################################################################################
 
 import requests
 from Crypto.Util.number import long_to_bytes, bytes_to_long

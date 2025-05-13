@@ -6,6 +6,15 @@
 #FLAG: CRYPTO25{096496ba-c281-42d9-84f4-af05b39cb006}
 #################################################################################
 
+#################################################################################
+# Attack: Bit Flipping Attack CBC.
+#################################################################################
+
+#################################################################################
+# Attack Description: The attacker forges the IV to force the decrypted 
+# plaintext to a chosen value and obtain the flag, (CBC IV manipulation).
+#################################################################################
+
 '''
 
 This script performs a padding oracle attack to decrypt a ciphertext by 

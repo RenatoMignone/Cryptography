@@ -1,3 +1,4 @@
+#################################################################################
 #Guess the mode. Now you need to reason about how modes work. 
 # Ask a second encryption to confirm your hypothesis...
 
@@ -7,6 +8,14 @@
 #FLAG: CRYPTO25{c15fa569-562d-4531-b58b-75fe687c4b0a}
 #################################################################################
 
+#################################################################################
+# Attack: ECB vs CBC Understanding
+#################################################################################
+
+#################################################################################
+# Attack Description: The attacker distinguishes the mode by comparing 
+# ciphertexts for identical plaintexts.
+#################################################################################
 
 # This script performs a chosen-plaintext attack to distinguish between ECB and CBC modes.
 # By submitting the same plaintext twice and comparing the ciphertexts, we can identify the mode:

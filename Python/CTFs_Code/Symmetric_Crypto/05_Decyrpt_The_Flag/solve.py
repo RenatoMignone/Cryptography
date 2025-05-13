@@ -1,3 +1,4 @@
+#################################################################################
 #As I don't have enough fantasy, I'm just reusing the same text as other challenges... 
 #...read the challenge code and find the flag!
 
@@ -6,6 +7,16 @@
 #################################################################################
 #FLAG: CRYPTO25{5a60b310-f194-4661-941b-eab7e18dc073}
 #################################################################################
+
+#################################################################################
+#Attack: Key Stream Reuse, The attacker exploits the reuse of the nonce and key in a stream cipher to recover the flag.
+#################################################################################
+
+#################################################################################
+# Attack Description: The attacker exploits the reuse of the nonce and key in 
+# a stream cipher to recover the flag.
+#################################################################################
+
 
 # This script performs a known-plaintext attack (specifically, a chosen-plaintext attack)
 # against a stream cipher or OTP-like encryption. By submitting a known plaintext of the

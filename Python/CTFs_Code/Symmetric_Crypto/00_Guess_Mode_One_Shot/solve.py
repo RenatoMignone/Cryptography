@@ -1,4 +1,4 @@
-#TRACK
+#################################################################################
 #Read the code. If you really understood it, you can correctly guess the mode. 
 #If you do it with a probability higher than 2^128 you'll get the flag.
 
@@ -6,6 +6,16 @@
 
 #################################################################################
 # FLAG: CRYPTO25{3709585c-5eda-4f6a-b1e5-a93e0cf99f93}
+#################################################################################
+
+#################################################################################
+#Attack: ECB vs CBC Understading
+#################################################################################
+
+#################################################################################
+# Attack Description: the client distinguishes between ECB and CBC 
+# by exploiting the fact that ECB encrypts identical plaintext blocks 
+# to identical ciphertext blocks, while CBC does not (due to the IV and chaining).
 #################################################################################
 
 from pwn import *

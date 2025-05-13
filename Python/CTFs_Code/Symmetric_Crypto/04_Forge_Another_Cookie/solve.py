@@ -1,8 +1,20 @@
+#################################################################################
 #Needless to say, you need the proper authorization cookie to get the flag
 
 #nc 130.192.5.212 6552
-
+#################################################################################
 #FLAG: CRYPTO25{598ea8bb-28ba-42ba-9557-5cea53b7fdae}
+#################################################################################
+
+#################################################################################
+#Attack: Copy and Paste Attack ECB.
+#################################################################################
+
+#################################################################################
+# Attack Description: The attacker forges an admin cookie by rearranging 
+# ciphertext blocks due to ECB's lack of diffusion between blocks. This is done
+# in one single connection otherwise the server would change the key value.
+#################################################################################
 
 from Crypto.Cipher import AES
 from Crypto.Util.number import long_to_bytes, bytes_to_long

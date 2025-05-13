@@ -3,3 +3,6 @@ This is a long message encrypted a line at the time...
 (Remember, flag format is CRYPTO25{<uuid4>})
 
 FLAG: CRYPTO25{c0ec7b27-16e8-4c60-9aad-3a83dcc1597b}
+
+
+The challenge is solved by means of the MTP binary
