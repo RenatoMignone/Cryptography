@@ -1,7 +1,11 @@
-from Crypto.Cipher import AES                   # Import AES cipher from PyCryptodome library
-from Crypto.Random import get_random_bytes      # Import function to generate random bytes
-from secret import flag                         # Import the flag (presumably a secret value)
-import random                                   # Import random module for random selection
+# Import AES cipher from PyCryptodome library
+from Crypto.Cipher import AES
+# Import function to generate random bytes
+from Crypto.Random import get_random_bytes
+# Import the flag (presumably a secret value)
+from secret import flag
+# Import random module for random selection
+import random
 
 # Mapping of mode names to AES mode constants
 modes_mapping = {
@@ -14,16 +18,20 @@ class RandomCipherRandomMode():
     def __init__(self):
         # Initialize the cipher with a random mode (either ECB or CBC)
         modes = [AES.MODE_ECB, AES.MODE_CBC]
-        self.mode = random.choice(modes)        # Randomly select a mode
-        self.key = get_random_bytes(32)         # Generate a random 32-byte key
+        # Randomly select a mode
+        self.mode = random.choice(modes)
+        # Generate a random 32-byte key
+        self.key = get_random_bytes(32)
         if self.mode == AES.MODE_ECB:
             # For ECB mode, no IV is required
             self.iv = None
-            self.cipher = AES.new(key=self.key, mode=self.mode)  # Create AES cipher in ECB mode
+            # Create AES cipher in ECB mode
+            self.cipher = AES.new(key=self.key, mode=self.mode)
         else:
             # For CBC mode, generate a random 16-byte IV
             self.iv = get_random_bytes(16)
-            self.cipher = AES.new(key=self.key, iv=self.iv, mode=self.mode)  # Create AES cipher in CBC mode
+            # Create AES cipher in CBC mode
+            self.cipher = AES.new(key=self.key, iv=self.iv, mode=self.mode)
 
     def encrypt(self, data):
         # Encrypt the provided data using the initialized cipher
