@@ -23,7 +23,6 @@ While other platforms may work, all implementations are tested on the reference 
 Additional resources for this course:
 - OpenSSL documentation
 - Python cryptography libraries documentation
-- Course materials on the official GitHub: [https://github.com/aldobas/cryptography-03lpyov-exercises](https://github.com/aldobas/cryptography-03lpyov-exercises)
 
 ## Learning Objectives
 
