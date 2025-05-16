@@ -32,6 +32,7 @@ def str_to_cookie_bytes(cookie_str):
     return cookie_str.encode()
 
 def xor_bytes(a: bytes, b: bytes) -> bytes:
+    # The zip function extracts the bytes from both a and b, pairing them together.
     return bytes([x ^ y for x, y in zip(a, b)])
 
 # Permette di mantenere una sessione HTTP persistente tra più richieste.
@@ -48,6 +49,7 @@ def initial_login():
         "username": "admin",
         "admin": "1"
     }
+    
     r = session.get(f"{URL}/login", params=params)
     data = r.json()
 
@@ -55,8 +57,12 @@ def initial_login():
     ciphertext = long_to_bytes(data['cookie'])
 
     # ricostruzione del plaintext atteso --> P
+    # This value is given in the chall.py code (30 days)
     expires_timestamp = int(time.time()) + 30 * 86400
+
     plaintext = f"username=admin&expires={expires_timestamp}&admin=1"
+
+    # Convert the plaintext string to bytes
     plaintext_bytes = str_to_cookie_bytes(plaintext)
 
     # ricava keystream: K = P ⊕ C
@@ -64,10 +70,12 @@ def initial_login():
 
     print(f"[+] Login completato. Keystream ricavato.\n    plaintext: {plaintext}")
 
+    # Returns the nonce received from the server and the new keystream generated 
     return nonce, keystream
 
 # 2. Forzatura di cookie con timestamp ipotizzati
 def forge_and_check(nonce, keystream):
+
     now = int(time.time())
 
     # Nota: in get_flag() osserva questa riga:
@@ -82,8 +90,17 @@ def forge_and_check(nonce, keystream):
 
     # --> Mando il cookie al server finché uno supera il controllo e mi restituisce la flag.
 
+
+    # La challenge ti dice che expire day è di 30 giorni. E poi sai che se il token è tra i 290 e i 300 giorni tutt okkkkk, altrimenti non va.
+    # Quindi, per forzare i giorni passati, devono essere almeno 260 giorni, e almeno 10 perchè nel caso peggiore hai 290 che + 10 fa 300.
+
     for guessed_days_ago in range(10, 260):
+
+        # This one is the same operation that is done in the server side.
+        # Guess admin expire guesses the days missing the admin to expire
         guessed_admin_expire = now - guessed_days_ago * 86400
+
+        # Scegliamo il valore 295 perchè compreso tra 290 e 300 giorni.
         forged_expires = guessed_admin_expire + 295 * 86400
 
         cookie_str = f"username=admin&expires={forged_expires}&admin=1"
@@ -97,6 +114,7 @@ def forge_and_check(nonce, keystream):
             "nonce": str(bytes_to_long(nonce)),
             "cookie": str(bytes_to_long(forged_ciphertext))
         }
+
         r = session.get(f"{URL}/flag", params=params)
         print(f"[{guessed_days_ago}] Tentativo con expires={forged_expires} → {r.text}")
 

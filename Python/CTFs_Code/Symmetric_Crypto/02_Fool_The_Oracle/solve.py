@@ -27,12 +27,14 @@ deduce the plaintext one byte at a time.
 
 '''
 
+# Import remote for network communication and sys for output
 from pwn import remote
 import sys
 
+# Set the remote host and port
 HOST = "130.192.5.212"
 PORT = 6541
-# Block size for the cipher (likely AES)
+# Set the block size (AES block size is 16 bytes)
 BLOCK_SIZE = 16
 
 
@@ -40,10 +42,12 @@ BLOCK_SIZE = 16
 # The payload is sent in hex encoding, and the server responds with the ciphertext. 
 # This means that we are using the server as an oracle to get the ciphertext for our crafted input.
 def get_ciphertext(io, payload_hex):
+    # Wait for the prompt from the server
     io.recvuntil(b'> ')
     # Send 'enc' command to server
     io.sendline(b'enc')
 
+    # Wait for the next prompt
     io.recvuntil(b'> ')
     # Send payload in hex encoding
     io.sendline(payload_hex.encode())
@@ -64,6 +68,7 @@ def main():
     # Buffer for recovered flag bytes
     recovered = b''
 
+    # Loop over each byte of the flag
     for i in range(flag_len):
         # Calculate padding to align next unknown byte
         # This means we need to pad the input to the block size minus one
@@ -92,6 +97,7 @@ def main():
         # to find the correct one
         # This is the byte we are trying to guess
         found = False
+        # Try all possible byte values for the next unknown byte
         for b in range(256):
             # Construct guess input
             guess = prefix + recovered + bytes([b])

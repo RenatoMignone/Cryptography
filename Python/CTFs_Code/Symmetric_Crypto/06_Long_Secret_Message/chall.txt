@@ -6,3 +6,17 @@ FLAG: CRYPTO25{c0ec7b27-16e8-4c60-9aad-3a83dcc1597b}
 
 
 The challenge is solved by means of the MTP binary
+
+
+
+Decryption
+
+1 this is our CTF now... The world of the electron and the switch, the
+2 Beauty of the baud. We make use of a service already existing without
+3 Paying for what could be dirt cheap if it wasn't run by profiteering
+4 Gluttons, and you call us CRYPTO25{. We explore... And you call us
+
+5 Criminals. We exist without skin color, without nationality, without
+6 Religious bias... And you call us criminals. You build atomic bombs,
+7 You wage wars, you murder, you cheat, and lie to us and try to make uY
+8 Believe it's for our own flag, c0ec7b27-16e8-4c60-9aad-3a83dcc1597b.

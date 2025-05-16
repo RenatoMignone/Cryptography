@@ -72,8 +72,8 @@ def main():
     # Buffer for recovered flag bytes
     recovered = b''
     for idx in range(FLAG_LEN):
-        # Number of bytes to pad so that the next unknown flag byte
-        # will be at the end of a block
+        # The pad_len value is used to have the byte of interest at the end of the block
+        # This because we are using ECB mode, and we want to guess the last byte of the block
         pad_bytes = pad_len + (BLOCK_SIZE - 1 - (len(recovered) % BLOCK_SIZE))
         # Prepare prefix for alignment
         prefix = b'A' * pad_bytes

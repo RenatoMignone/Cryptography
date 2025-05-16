@@ -65,6 +65,8 @@ def main():
 
     # Correct forged IV: leak ^ pt ^ iv
     # Compute the forged IV so that decryption yields the leak
+    # XOR the leak, plaintext, and IV to get the forged IV
+    
     forged_iv = bytes([a ^ b ^ c for a, b, c in zip(leak, pt, iv)])
     # Print forged IV in hex
     print(f"Forged IV: {forged_iv.hex()}")
