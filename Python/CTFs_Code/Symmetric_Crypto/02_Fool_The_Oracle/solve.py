@@ -61,6 +61,7 @@ def main():
     # This is a byte-by-byte ECB oracle attack (ECB byte-at-a-time decryption).
     # Connect to the remote server
     io = remote(HOST, PORT)
+
     # Calculate expected flag length
     # This value is known from the server code
     flag_len = len("CRYPTO25{}") + 36
@@ -70,12 +71,16 @@ def main():
 
     # Loop over each byte of the flag
     for i in range(flag_len):
+
         # Calculate padding to align next unknown byte
         # This means we need to pad the input to the block size minus one
         pad_len = BLOCK_SIZE - (len(recovered) % BLOCK_SIZE) - 1
 
         # Create prefix of 'A's for alignment
         # Based on the current length of the recovered bytes
+        # This because the pad len at each iteration is given by the current length of the recovered bytes
+        # This means we are padding the input to the block size minus one
+        # The minus one is because we want the byte to guess be the last byte of the block
         prefix = b'A' * pad_len
 
         # Get ciphertext for current prefix
@@ -97,7 +102,10 @@ def main():
         # to find the correct one
         # This is the byte we are trying to guess
         found = False
+
+
         # Try all possible byte values for the next unknown byte
+        # So we will iterate over all possible byte values (0-255)
         for b in range(256):
             # Construct guess input
             guess = prefix + recovered + bytes([b])
@@ -118,6 +126,7 @@ def main():
                 sys.stdout.flush()
                 found = True
                 break
+            
         # If no byte found, stop
         if not found:
             print("\n[!] Failed to recover next byte.")

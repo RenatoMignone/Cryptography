@@ -60,6 +60,7 @@ for _ in range(128):
     # the XOR is done because the encryption is symmetric
     # this means that if you XOR the ciphertext with the same key, you get the plaintext
     # in this case, the key is the OTP
+
     data_part1 = xor(otp1, block)
     data_part2 = xor(otp2, block)
     data = data_part1 + data_part2  # Concatenate the two data parts
