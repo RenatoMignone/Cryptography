@@ -1,27 +1,15 @@
-# Import ChaCha20 cipher from PyCryptodome
 from Crypto.Cipher import ChaCha20
-# Import function to generate random bytes
 from Crypto.Random import get_random_bytes
-# Import utilities to convert between long integers and bytes
 from Crypto.Util.number import long_to_bytes, bytes_to_long
-# Import time module for timestamps
 import time
-# Import randint for random integer generation
 from random import randint
-# Import the secret flag from a separate file
 from secret import flag
-# Import Flask web framework and related modules
 from flask import Flask, session, jsonify, request
-# Import Flask-Session for server-side session management
 from flask_session import Session
 
-# Create a Flask application instance
 app = Flask(__name__)
-# Set a random secret key for Flask sessions
 app.secret_key = get_random_bytes(16).hex()
-# Configure Flask-Session to use the filesystem for session storage
 app.config['SESSION_TYPE'] = 'filesystem'
-# Initialize Flask-Session
 sess = Session()
 sess.init_app(app)
 
@@ -95,8 +83,12 @@ def login():
     if admin != 1:
         admin = 0
     else:
+        # The admin expire date is based on the current time minus a random number of days from 10 to 259
         session['admin_expire_date'] = int(time.time()) - randint(10, 259) * 24 * 60 * 60
+
+    # Set the expiration date to 30 days from now
     expire_date = int(time.time()) + 30 * 24 * 60 * 60
+
     # Create a cookie string with username, expiration date, and admin status
     cookie = f"username={username}&expires={expire_date}&admin={admin}"
 
@@ -128,6 +120,8 @@ def get_flag():
             return "You are not an admin!"
 
         # Check if the admin session is still valid
+        # If the token's 'expires' field  minus the session's admin expiration date is between 290 and 300 days,
+        # then the session is valid and the flag can be returned
         if 290 * 24 * 60 * 60 < abs(int(token["expires"]) - session['admin_expire_date']) < 300 * 24 * 60 * 60:
             return f"OK! Your flag: {flag}"
         else:

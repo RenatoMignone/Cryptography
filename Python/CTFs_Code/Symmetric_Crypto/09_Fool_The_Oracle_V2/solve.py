@@ -11,102 +11,79 @@
 # Attack: Adaptive Chosen Plaintext Attack
 #################################################################################
 
-#################################################################################
-# Attack Description: The attacker aligns their input after the random prefix 
-# and recovers the flag one byte at a time using the ECB oracle.
-#################################################################################
-
-# This script performs a byte-at-a-time ECB decryption attack with a random-length prefix.
-# It first finds the prefix alignment, then recovers the flag one byte at a time by exploiting the ECB oracle.
-
-
-#FLAG: CRYPTO25{ad3c6c1e-5cac-4c87-b5c3-a5dab511fee3}
-
-# Attack: Adaptive Chosen Plaintext Attack
-
-# Attack Description: The attacker aligns their input after the random prefix 
-# and recovers the flag one byte at a time using the ECB oracle.
-
-# This script performs a byte-at-a-time ECB decryption attack with a random-length prefix.
-# It first finds the prefix alignment, then recovers the flag one byte at a time by exploiting the ECB oracle.
 
 from pwn import *
-from Crypto.Util.Padding import pad
-import binascii
 
-BLOCK_SIZE = 16
-HOST = "130.192.5.212" 
-PORT = 6542
+#-----------------------------------------------------------------
+BLOCK = 16
+HOST, PORT = "130.192.5.212", 6542
+# We set PADD = 11 because the prefix is 5 bytes, and 5 + 11 = 16 (one block). 
+# This lets us control the start of a block, which is essential for the ECB byte-at-a-time attack.
+PADD = 11
+# The length of the flag is known from the server
+FLAG_LEN = 46
 
-def get_ciphertext(io, user_input: bytes) -> bytes:
-    io.sendlineafter(b"> ", b"enc") # Send the "enc" command
-    io.sendlineafter(b"> ", user_input.hex().encode()) 
-    line = io.recvline().strip()
-    return bytes.fromhex(line.decode())
-
-def find_alignment(io) -> int:
-    """Finds the number of prefix padding bytes needed to align our input to a block boundary."""
-    for pad_len in range(BLOCK_SIZE * 2):
-        payload = b"A" * pad_len + b"B" * (BLOCK_SIZE * 2) # create a payload with padding up to 2 blocks 
-        ct = get_ciphertext(io, payload)
-
-        # Search for two identical adjacent blocks 
-        #In ECB mode, if two plaintext blocks are identical, their ciphertext blocks will also be identical.
-        #If your two B-filled blocks are aligned with the block boundaries (i.e., not split by the random prefix), their ciphertexts will be the same.
-        #If they are not aligned, the random prefix will cause the blocks to be different, so their ciphertexts will not match.
-
-        for i in range(0, len(ct) - BLOCK_SIZE * 2, BLOCK_SIZE): 
-            if ct[i:i+BLOCK_SIZE] == ct[i+BLOCK_SIZE:i+2*BLOCK_SIZE]:
-                print(f"[+] Alignment found! Need {pad_len} padding bytes.")
-                return pad_len
-    raise Exception("[-] Failed to find alignment")
+#-----------------------------------------------------------------
+# Function to interact with the oracle and get ciphertext for a given plaintext
+def get_ct(io, pt):
+    # Send 'enc' command and plaintext (hex encoded), receive ciphertext (hex)
+    io.sendlineafter(b"> ", b"enc")
+    io.sendlineafter(b"> ", pt.hex().encode())
+    return bytes.fromhex(io.recvline().strip().decode())
 
 
-def recover_flag():
+#-----------------------------------------------------------------
+def main():
     io = remote(HOST, PORT)
-    prefix_pad_len = find_alignment(io) #guess the prefix padding length
 
+    # Buffer to store the recovered flag bytes
     known = b""
-    total_flag_len = len("CRYPTO25{}") + 36  #from challenge code
-    print(f"[*] Starting ECB attack. Target length: {total_flag_len} bytes")
+    
+    # Loop over each byte of the flag to recover it one at a time
+    while len(known) < FLAG_LEN:
 
-    while len(known) < total_flag_len:
+        # Calculate the padding needed to align the next unknown flag byte at the end of a block
+        plen = (BLOCK - (len(known)%BLOCK) - 1) % BLOCK
 
-        # The pad_len value is used to have the byte of interest at the end of the block
-        # This because we are using ECB mode, and we want to guess the last byte of the block
-        pad_len = (BLOCK_SIZE - (len(known) % BLOCK_SIZE) - 1) % BLOCK_SIZE # calculate padding length
-        prefix = b"A" * (prefix_pad_len + pad_len) # based on alignment, we know how many bytes to pad
+        # Prepare the prefix to achieve the correct alignment
+        # The prefix is aligned to ensure the next byte we want to guess is at the end of a block
+        prefix = b"A"*(PADD+plen)
 
-        # This is a value that does not changes in the loop
-        start_index = (prefix_pad_len + 5) // BLOCK_SIZE  # +5 for the random prefix
-        #This one is the currect block we are analyzing
-        block_index = start_index + (len(known) // BLOCK_SIZE) # calculate the block index of the byte we want to guess
+        # Determine which ciphertext block contains the next flag byte
+        idx = 1 + len(known)//BLOCK
 
-        target = get_ciphertext(io, prefix) #send the prefix to the oracle and get the ciphertext
+        # Get the ciphertext for the aligned input
+        tgt = get_ct(io, prefix)
 
-        # The value "block_index * BLOCK_SIZE" is the start of the block we are analyzing
-        # In the test_cipher variable, we got from the server the ciphertext of the prefix + known + b
-        # THe slice goes until the next block after the one we are analyzing
-        target_block = target[block_index * BLOCK_SIZE:(block_index + 1) * BLOCK_SIZE]
+        # [idx*BLOCK:(idx+1)*BLOCK] this slices let us take only the interested block of the obtained ciphertext
+        target = tgt[idx*BLOCK:(idx+1)*BLOCK]
 
-        # The value 256 is the maximum value of a byte
+        # Try all possible byte values for the next flag byte
         for b in range(256):
 
-            test_input = prefix + known + bytes([b])
-            test_cipher = get_ciphertext(io, test_input)
+            # Here we are using the server as an oracle, the test plaintext is the prefix plus the guessed byte
+            # So we are getting the ciphertext for the new tested value, and then we compare it with the target block
+            test_ct = get_ct(io, prefix+known+bytes([b]))
 
-            test_block = test_cipher[block_index * BLOCK_SIZE : (block_index + 1) * BLOCK_SIZE]
+            # Extract the relevant block from the ciphertext
+            text_value = test_ct[idx*BLOCK:(idx+1)*BLOCK]
 
-            if test_block == target_block:
+            # Compare the relevant block to the target block
+            if text_value == target:
+                # If they match, we have found the correct byte
                 known += bytes([b])
-                print(f"[+] Found byte: {bytes([b])} | Current flag: {known.decode(errors='ignore')}")
+                # Print the recovered bytes so far
+                print(known.decode(errors="ignore"), end="\r")
                 break
         else:
-            print("[-] Failed to match next byte.")
+            # If no match is found, print an error and stop
+            print("Failed to match next byte.")
             break
-
-    print(f"[✔] Final flag: {known.decode(errors='ignore')}")
+    # Print the full recovered flag
+    print(f"\nFlag: {known.decode(errors='ignore')}")
     io.close()
 
-if _name_ == "_main_":
-    recover_flag()
+
+#-----------------------------------------------------------------
+if __name__ == "__main__":
+    main()

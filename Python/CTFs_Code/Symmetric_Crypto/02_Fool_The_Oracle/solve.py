@@ -1,138 +1,77 @@
-#################################################################################
-#you have the code, guess the flag
-
-#nc 130.192.5.212 6541
-
-#################################################################################
 #FLAG: CRYPTO25{96ce8a93-d548-4f88-bc6c-db6eb3c96382}
-#################################################################################
 
-#################################################################################
 # Attack: Adaptive Chosen Plaintext Attack 
-#################################################################################
-
-#################################################################################
 # Attack Description: The attacker adaptively chooses plaintexts based on previous responses.
 # By exploiting the deterministic nature of ECB, the attacker can recover the 
 # secret appended to their input.
-#################################################################################
 
-'''
-This script performs a byte-by-byte ECB oracle attack to recover a secret flag from a remote server.
+from pwn import *
+from Crypto.Util.Padding import pad
 
-The attack exploits the Electronic Codebook (ECB) mode of encryption, which encrypts 
-identical plaintext blocks into identical ciphertext blocks. 
-By carefully crafting inputs and observing the resulting ciphertext, it is possible to 
-deduce the plaintext one byte at a time.
 
-'''
-
-# Import remote for network communication and sys for output
-from pwn import remote
-import sys
-
-# Set the remote host and port
+#-----------------------------------------------------------------------------
+# Constants
+BLOCK_SIZE = 16
 HOST = "130.192.5.212"
 PORT = 6541
-# Set the block size (AES block size is 16 bytes)
-BLOCK_SIZE = 16
+FLAG_LEN = 46
 
 
-# This function sends a payload to the server and retrieves the ciphertext.
-# The payload is sent in hex encoding, and the server responds with the ciphertext. 
-# This means that we are using the server as an oracle to get the ciphertext for our crafted input.
-def get_ciphertext(io, payload_hex):
-    # Wait for the prompt from the server
-    io.recvuntil(b'> ')
-    # Send 'enc' command to server
-    io.sendline(b'enc')
+#-----------------------------------------------------------------------------
+def get_ciphertext(io, user_input: bytes):
+    io.sendlineafter(b"> ", b"enc")
+    io.sendlineafter(b"> ", user_input.hex().encode()) 
+    line = io.recvline().strip()
+    return bytes.fromhex(line.decode())
 
-    # Wait for the next prompt
-    io.recvuntil(b'> ')
-    # Send payload in hex encoding
-    io.sendline(payload_hex.encode())
-    # Receive and decode ciphertext
-    ct = io.recvline().strip().decode()
-    return ct
-
-
-
-def main():
-    # This is a byte-by-byte ECB oracle attack (ECB byte-at-a-time decryption).
-    # Connect to the remote server
+#-----------------------------------------------------------------------------
+def recover_flag():
     io = remote(HOST, PORT)
 
-    # Calculate expected flag length
-    # This value is known from the server code
-    flag_len = len("CRYPTO25{}") + 36
+    # Known flag
+    known = b""
 
-    # Buffer for recovered flag bytes
-    recovered = b''
+    # Until we have recovered the entire flag
+    while len(known) < FLAG_LEN: 
 
-    # Loop over each byte of the flag
-    for i in range(flag_len):
+        # Calculate the padding length to align the next byte to guess at the end of a block
+        # This is because of how the adaptive chosen plaintext attack works
+        pad_len = (BLOCK_SIZE - (len(known) % BLOCK_SIZE) - 1) % BLOCK_SIZE 
 
-        # Calculate padding to align next unknown byte
-        # This means we need to pad the input to the block size minus one
-        pad_len = BLOCK_SIZE - (len(recovered) % BLOCK_SIZE) - 1
+        #We send a prefix of A's to align the next flag byte at the end of a block
+        prefix = b"A" * pad_len 
 
-        # Create prefix of 'A's for alignment
-        # Based on the current length of the recovered bytes
-        # This because the pad len at each iteration is given by the current length of the recovered bytes
-        # This means we are padding the input to the block size minus one
-        # The minus one is because we want the byte to guess be the last byte of the block
-        prefix = b'A' * pad_len
+        #We calculate the block index of the next flag byte
+        block_index = (len(prefix) + len(known)) // BLOCK_SIZE
 
-        # Get ciphertext for current prefix
-        ct_hex = get_ciphertext(io, prefix.hex())
+        #We send all the As to the server and get the ciphertext
+        target = get_ciphertext(io, prefix) 
 
-        # Convert ciphertext from hex to bytes
-        ct_bytes = bytes.fromhex(ct_hex)
+        #We extract the target block we want to match
+        target_block = target[block_index * BLOCK_SIZE:(block_index + 1) * BLOCK_SIZE]
 
-        # Determine which block contains the target byte
-        # This means we need to find the block index based on the length of the prefix and the recovered bytes
-        block_idx = (len(prefix) + len(recovered)) // BLOCK_SIZE
-
-        # Extract target ciphertext block
-        target_block = ct_bytes[block_idx*BLOCK_SIZE:(block_idx+1)*BLOCK_SIZE]
-
-        # Flag to indicate if the correct byte was found
-        # Initialized to False
-        # This means we will iterate over all possible byte values (0-255)
-        # to find the correct one
-        # This is the byte we are trying to guess
-        found = False
-
-
-        # Try all possible byte values for the next unknown byte
-        # So we will iterate over all possible byte values (0-255)
+        #We iterate over all possible bytes (0-255) to find the next byte of the flag
         for b in range(256):
-            # Construct guess input
-            guess = prefix + recovered + bytes([b])
-            # Convert guess to hex
-            guess_hex = guess.hex()
-            # Get ciphertext for guess
-            ct_guess_hex = get_ciphertext(io, guess_hex)
-            # Convert guess ciphertext to bytes
-            ct_guess_bytes = bytes.fromhex(ct_guess_hex)
-            # Extract guess block
-            guess_block = ct_guess_bytes[block_idx*BLOCK_SIZE:(block_idx+1)*BLOCK_SIZE]
-            # If blocks match, correct byte found
-            if guess_block == target_block:
-                # Append recovered byte
-                recovered += bytes([b])
-                # Print recovered character
-                sys.stdout.write(chr(b))
-                sys.stdout.flush()
-                found = True
+
+            #We create the test input by appending the current byte to the known flag and prefix
+            test_input = prefix + known + bytes([b])
+
+            #We get the ciphertext for the test input
+            test_cipher = get_ciphertext(io, test_input)
+
+            #We extract the block we want to check
+            test_block = test_cipher[block_index * BLOCK_SIZE:(block_index + 1) * BLOCK_SIZE]
+
+            #If the test block matches the target block, we have found the next byte of the flag
+            if test_block == target_block: 
+                known += bytes([b])
+                print(f"Current flag: {known.decode(errors='ignore')}")
                 break
-            
-        # If no byte found, stop
-        if not found:
-            print("\n[!] Failed to recover next byte.")
+        else:
+            print("Failed to match next byte.")
             break
-    # Print the recovered flag
-    print("\nRecovered flag:", recovered.decode(errors='replace'))
+
+    print(f"flag: {known.decode(errors='ignore')}")
 
 if __name__ == "__main__":
-    main()
+    recover_flag()

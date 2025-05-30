@@ -12,107 +12,106 @@
 #################################################################################
 
 #################################################################################
-# Attack Description:The attacker aligns their input after the random prefix 
+# Attack Description: The attacker aligns their input after the random prefix 
 # and recovers the flag one byte at a time using the ECB oracle.
 #################################################################################
-
-# This script performs a byte-at-a-time ECB decryption attack with a random-length prefix.
-# It first finds the prefix alignment, then recovers the flag one byte at a time by exploiting the ECB oracle.
 
 from pwn import remote
 import sys
 
-HOST = "130.192.5.212"
-PORT = 6543
-# Block size for the cipher (likely AES)
-BLOCK_SIZE = 16
-# Known flag length: len("CRYPTO25{}") + 36 = 46
-FLAG_LEN = 46  # len("CRYPTO25{}") + 36
+#----------------------------------------------------------------
+HOST, PORT = "130.192.5.212", 6543
+BLOCK = 16
+FLAG_LEN = 46
 
-def get_ciphertext(io, payload_hex):
-
+#----------------------------------------------------------------
+def get_ct(io, pt_hex):
     io.recvuntil(b'> ')
     io.sendline(b'enc')
     io.recvuntil(b'> ')
-    io.sendline(payload_hex.encode())
-    # Receive and decode ciphertext
-    return io.recvline().strip().decode()
 
-def find_prefix_alignment(io):
-    """
-    Find the number of bytes needed to align our input to a block boundary,
-    and the block index where our controlled data starts.
-    Returns (pad_len, start_block).
-    """
-    for pad in range(0, BLOCK_SIZE):
-        # Prepare test input with increasing padding
-        test = b'A' * (pad + 2 * BLOCK_SIZE)
-        # Get ciphertext for test input
-        ct_hex = get_ciphertext(io, test.hex())
-        # Convert ciphertext from hex to bytes
-        ct = bytes.fromhex(ct_hex)
-        # Split into blocks
-        blocks = [ct[i:i+BLOCK_SIZE] for i in range(0, len(ct), BLOCK_SIZE)]
+    io.sendline(pt_hex.encode())
+
+    # We return the value as bytes
+    return bytes.fromhex(io.recvline().strip().decode())
+
+
+#----------------------------------------------------------------
+# Utility function to split data into blocks of given size
+def split_blocks(data):
+    # Return a list of blocks of length 'size'
+    return [data[i:i+BLOCK] for i in range(0, len(data), BLOCK)]
+
+
+#----------------------------------------------------------------
+# finds out how many bytes you need to add to your input so that your controlled 
+# data starts exactly at the beginning of an AES block
+def find_align(io):
+    # Try different paddings to find when two consecutive blocks are identical
+    for pad in range(1,BLOCK):
+        # Send a pattern of 'A's long enough to guarantee two identical blocks after alignment
+        # By means of this input, for some value of pad, we will have 2 blocks of 'A's
+        test = b'A' * (pad + 2*BLOCK)
+        # Get the ciphertext blocks for this input
+        blocks = split_blocks(get_ct(io, test.hex()))
         # Look for two identical consecutive blocks
-        for i in range(len(blocks) - 1):
+        for i in range(len(blocks)-1):
+            #if two blocks are equal, then we have found the alignment
             if blocks[i] == blocks[i+1]:
-                # Found alignment
+                # Return the padding needed and the block index where alignment occurs
                 return pad, i
-    # If alignment not found, raise exception
-    raise Exception("Failed to find prefix alignment")
 
+
+#----------------------------------------------------------------
 def main():
-    # Connect to the remote server
+
     io = remote(HOST, PORT)
-    # Find pad_len and the block index where our 'A' blocks start
-    pad_len, start_block = find_prefix_alignment(io)
-    # Print alignment information
-    print(f"[+] Alignment found: pad_len={pad_len}, start_block={start_block}")
+    # Find the required padding and the starting block index for aligned input
+    pad_len, start_blk = find_align(io)
 
-    # Buffer for recovered flag bytes
+    print(f"Padding length: {pad_len}, Start block index: {start_blk}")
+
+    # Buffer to store the recovered flag bytes
     recovered = b''
-    for idx in range(FLAG_LEN):
-        # The pad_len value is used to have the byte of interest at the end of the block
-        # This because we are using ECB mode, and we want to guess the last byte of the block
-        pad_bytes = pad_len + (BLOCK_SIZE - 1 - (len(recovered) % BLOCK_SIZE))
-        # Prepare prefix for alignment
-        prefix = b'A' * pad_bytes
-        # Obtain ciphertext block for real oracle
-        ct_hex = get_ciphertext(io, prefix.hex())
-        # Convert ciphertext from hex to bytes
-        ct = bytes.fromhex(ct_hex)
-        # Target block index shifts as we recover more bytes
-        block_idx = start_block + (len(recovered) // BLOCK_SIZE)
-        # Extract target ciphertext block
-        target_block = ct[block_idx*BLOCK_SIZE:(block_idx+1)*BLOCK_SIZE]
 
-        # Flag to indicate if the correct byte was found
-        found = False
+    # Loop over each byte of the flag to recover it one at a time
+    for i in range(FLAG_LEN):
+
+        # Calculate the padding needed to align the next unknown flag byte at the end of a block
+        pad = pad_len + (BLOCK-1 - (len(recovered)%BLOCK))
+
+        # Prepare the prefix to achieve the correct alignment
+        prefix = b'A' * pad
+
+        # Get the ciphertext for the aligned input (without the next flag byte)
+        ct = get_ct(io, prefix.hex())
+
+        # Determine which ciphertext block contains the next flag byte
+        blk_idx = start_blk + (len(recovered)//BLOCK)
+
+        # Extract the target ciphertext block to match against
+        target = ct[blk_idx*BLOCK:(blk_idx+1)*BLOCK]
+
+        # Try all possible byte values for the next flag byte
         for b in range(256):
-            # Construct guess input
+
+            # Construct the guess: prefix + recovered flag so far + candidate byte
             guess = prefix + recovered + bytes([b])
-            # Get ciphertext for guess input
-            ct_guess_hex = get_ciphertext(io, guess.hex())
-            # Convert guess ciphertext from hex to bytes
-            ct_guess = bytes.fromhex(ct_guess_hex)
-            # Extract guess block
-            guess_block = ct_guess[block_idx*BLOCK_SIZE:(block_idx+1)*BLOCK_SIZE]
-            # If blocks match, correct byte found
-            if guess_block == target_block:
-                # Append recovered byte
+
+            # Get the ciphertext for the guess
+            guess_ct = get_ct(io, guess.hex())
+
+            # Compare the relevant block to the target block
+            if guess_ct[blk_idx*BLOCK:(blk_idx+1)*BLOCK] == target:
+                # If they match, we have found the correct byte
                 recovered += bytes([b])
-                # Print recovered character
-                sys.stdout.write(chr(b))
-                sys.stdout.flush()
-                found = True
+                # Print the recovered byte to stdout
+                print()
                 break
-        # If no byte found, print error and stop
-        if not found:
-            print(f"\n[!] Failed to recover byte {idx}")
-            break
+    # Print the full recovered flag
+    print(f"\n[+] Flag: {recovered.decode(errors='replace')}")
 
-    # Print the recovered flag
-    print(f"\n[+] Recovered flag: {recovered.decode(errors='replace')}")
 
+#----------------------------------------------------------------
 if __name__ == "__main__":
     main()

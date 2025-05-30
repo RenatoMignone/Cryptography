@@ -1,4 +1,5 @@
-from Crypto.Cipher import ChaCha20
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad, unpad
 from Crypto.Random import get_random_bytes
 from secret import flag
 import json
@@ -7,27 +8,19 @@ import base64
 key = get_random_bytes(32)
 
 
-def make_cipher():
-    nonce = get_random_bytes(12)
-    cipher = ChaCha20.new(key=key, nonce=nonce)
-    return nonce, cipher
-
-
 def get_user_token(name):
-    nonce, cipher = make_cipher()
+    cipher = AES.new(key=key, mode=AES.MODE_ECB)
     token = json.dumps({
-        "username": name
+        "username": name,
+        "admin": False
     })
-    print(token)
-    enc_token = cipher.encrypt(token.encode())
-    return f"{base64.b64encode(nonce).decode()}.{base64.b64encode(enc_token).decode()}"
+    enc_token = cipher.encrypt(pad(token.encode(), AES.block_size))
+    return f"{base64.b64encode(enc_token).decode()}"
 
 
 def check_user_token(token):
-    nonce, token = token.split(".")
-    nonce = base64.b64decode(nonce)
-    cipher = ChaCha20.new(key=key, nonce=nonce)
-    dec_token = cipher.decrypt(base64.b64decode(token))
+    cipher = AES.new(key=key, mode=AES.MODE_ECB)
+    dec_token = unpad(cipher.decrypt(base64.b64decode(token)), AES.block_size)
 
     user = json.loads(dec_token)
 
