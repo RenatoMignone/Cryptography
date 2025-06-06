@@ -10,7 +10,11 @@ nc 130.192.5.212 6646
 
 
 # ─── Attack ──────────────────────────────────────────────────────────────────────
-# RSA multiplicative blinding (simplified CCA-style)
+# This is classified as an implementation attack because it exploits
+#  the improper implementation of the RSA service that allows both 
+# encryption and decryption operations without proper access controls. 
+# A secure implementation would not allow arbitrary decryption requests 
+# or would have protections against such blinding attacks.
 
 # ─── Steps ──────────────────────────────────────────────────────────────────────
 #   1. Connect to the server and read the flag ciphertext `c`.

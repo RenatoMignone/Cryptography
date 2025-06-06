@@ -1,3 +1,5 @@
+#nc 130.192.5.212 6647
+
 #FLAG: CRYPTO25{b4b6d1f1-929c-4a41-9900-51091ea9b258}
 
 #!/usr/bin/env python3

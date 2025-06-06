@@ -1,3 +1,26 @@
+#See the attachment for the challenge code. The output is:
+
+# 6050935527551872879286435303438132320371235206522153386309454075563003574208085513601683088
+# 7120470658395455751858380183285852786807229077435165810022519265154399424311072791755790585
+# 5449216994747799961986108537666770882091564578593017553132465980355772937998532560659790743
+# 43370064111263698164125580000165237
+
+#44695558076372490838321125335259117268430036823123326565653896322404966549742986308988778274
+# 3887213458112558013056583871799787369248224403827301145981699892812102669728743876579892108
+# 7592195670564074051481908954633943193400111999830999228019660067218011621996625700376487167
+# 0107271245284636072817194316693323
+
+
+# Why Fermat's works here: When two prime factors are close together 
+# (small difference), Fermat's factorization method is very efficient. 
+# It exploits the fact that if n = p × q where p and q are close, then 
+# n can be expressed as a difference of squares: n = a² - b² where 
+# a = (p+q)/2 and b = (q-p)/2.Why Fermat's works here: When two prime 
+# factors are close together (small difference), Fermat's factorization
+# method is very efficient. It exploits the fact that if n = p × q where
+# p and q are close, then n can be expressed as a difference of squares: 
+# n = a² - b² where a = (p+q)/2 and b = (q-p)/2.
+
 # FLAG: CRYPTO25{b697e692-401f-4070-9f1f-c9dc2e97a7e9}
 
 from Crypto.Util.number import long_to_bytes

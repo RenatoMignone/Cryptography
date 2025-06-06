@@ -1,3 +1,9 @@
+#Find a string that is both the same and different than another string!
+
+#nc 130.192.5.212 6631
+
+# Collision attack on MD4
+
 #FLAG: CRYPTO25{4dc2e2e9-a14f-4382-8a44-f57852a626ef}
 
 #!/usr/bin/env python3

@@ -1,3 +1,7 @@
+# You have the code, access the server and get the flag!
+
+# nc 130.192.5.212 6645
+
 #FLAG: CRYPTO25{af37efa5-de5b-4de2-adcd-43324caca805}
 
 #!/usr/bin/env python3

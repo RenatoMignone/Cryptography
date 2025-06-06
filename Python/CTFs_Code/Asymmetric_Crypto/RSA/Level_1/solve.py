@@ -1,3 +1,7 @@
+# The attached file contains the code and the output. Use them to get the flag...
+
+# General factoriazion attack on RSA with small primes
+
 # FLAG: CRYPTO25{X5a.7}
 
 from Crypto.Util.number import long_to_bytes
@@ -17,7 +21,7 @@ if len(factors) != 2:
     raise ValueError(f"Expected 2 primes, got {factors!r}")
 p, q = factors
 
-# Step 2: Compute φ(n)
+# Step 2: Compute phi(n)
 phi = (p - 1) * (q - 1)
 
 # Step 3: Compute private exponent d
