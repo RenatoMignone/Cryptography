@@ -38,8 +38,8 @@ print(f"[*] Retrieved factors:\n    p = {p}\n    q = {q}")
 # ─── Step 3: Compute φ(n) and private exponent d ───────────────────────────────
 phi = (p - 1) * (q - 1)
 d = inverse(e, phi)
-print(f"[*] Computed φ(n) = {phi}")
-print(f"[*] Computed private exponent d = {d}")
+print(f"Computed φ(n) = {phi}")
+print(f"Computed private exponent d = {d}")
 
 # ─── Step 4: Decrypt ciphertext m = ct^d mod n ────────────────────────────────
 m = pow(ct, d, n)

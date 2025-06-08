@@ -40,6 +40,7 @@ def egcd(a, b):
     return (x, y, g)
 
 # These 3 values are the Bézout coefficients and gcd
+# The bezout coefficients s and t will satisfy s*e1 + t*e2 = gcd(e1, e2)
 s, t, g = egcd(e1, e2)
 if g != 1:
     print("Exponents not coprime!")

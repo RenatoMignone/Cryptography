@@ -25,7 +25,6 @@
 # ─── Server Information ─────────────────────────────────────────────────────────
 # nc 130.192.5.212 6645
 
-#!/usr/bin/env python3
 from pwn import remote
 from Crypto.Util.number import inverse, long_to_bytes
 
@@ -42,6 +41,9 @@ def main():
 
     # ─── Step 2: Choose blinding factor and compute blinded ciphertext ─────────
     s = 2  # blinding factor (any value != 1 mod n works)
+
+    # Now we compute the blinded ciphertext, which is c' = c * s^e mod n
+    # "Blinded" means we multiply the ciphertext by a random value raised to the public exponent
     c_blinded = (c * pow(s, e, n)) % n
 
     # ─── Step 3: Request decryption of blinded ciphertext ──────────────────────
@@ -49,6 +51,7 @@ def main():
     m_blinded = int(conn.recvline().strip())
 
     # ─── Step 4: Unblind to recover original message ───────────────────────────
+    # This inverse operation does m = m_blinded * s^(-1) mod n
     m = (m_blinded * inverse(s, n)) % n
 
     # ─── Step 5: Convert to bytes and print flag ───────────────────────────────

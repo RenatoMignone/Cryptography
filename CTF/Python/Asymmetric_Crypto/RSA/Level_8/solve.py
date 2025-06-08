@@ -37,6 +37,8 @@ e = 3
 # ─── Step 1: Apply Chinese Remainder Theorem ───────────────────────────────────
 N = n[0] * n[1] * n[2]
 total = 0
+
+
 for ni, ci in zip(n, c):
     Ni = N // ni
     inv_Ni = inverse(Ni, ni)
