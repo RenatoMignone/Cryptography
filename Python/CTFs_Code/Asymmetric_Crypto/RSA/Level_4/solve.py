@@ -1,15 +1,25 @@
-#See the attachment for the challenge code. The output is:
+# FLAG: CRYPTO25{2533166c-ce76-4f5e-b992-f7e4a24d0b97}
 
+# ─── Attack ──────────────────────────────────────────────────────────────────────
+# Attack Type: Common Moduli
+# This is classified as a mathematical attack because it exploits
+# the weakness when the same RSA modulus is reused with different
+# (coprime) exponents to encrypt the same message. Using the Extended
+# Euclidean Algorithm, we can recover the plaintext without factoring.
+
+# ─── Steps ──────────────────────────────────────────────────────────────────────
+#   1. Use Extended GCD to find coefficients s, t such that s·e₁ + t·e₂ = 1.
+#   2. Compute m = c₁^s · c₂^t mod n (handling negative exponents with modular inverse).
+#   3. Convert the recovered message to bytes to reveal the flag.
+
+# ─── Challenge Output ───────────────────────────────────────────────────────────
 # 136372941954692995052032614106416002216650352281441768759106047115825257661310123118558086046873251952204915740853517008372422353621244931366409094731856824295828106036399145756514345255241109944294641060644246049854296519101775880563276657142059245230769447888021843340822736997057074223723734593369646608283
 # [88934261481985787316571946676203348514352494646042103159736155624287938096099586834729171652139440814472420307071476143907698982272593448957770236088603490101924827608944006107576740571416087954304061091614594794358854353419664581332745351113861171522629631586344259719016707622211007808872462656489173218734, 31191490339291402076171068036548032381977184741778243810947202097002026583133103229115040414216968980627919985794378128894603186334221963211692252394535977554990491215621733091487550326776298499502932523408287882489799200954692353162958794137970552454035789701538315132727860436887544051794011893682559545564]
 
-#FLAG: CRYPTO25{2533166c-ce76-4f5e-b992-f7e4a24d0b97}
-
-#!/usr/bin/env python3
 import sys
 from Crypto.Util.number import long_to_bytes, inverse
 
-# challenge output
+# ─── Given Values ────────────────────────────────────────────────────────────────
 n = 136372941954692995052032614106416002216650352281441768759106047115825257661310123118558086046873251952204915740853517008372422353621244931366409094731856824295828106036399145756514345255241109944294641060644246049854296519101775880563276657142059245230769447888021843340822736997057074223723734593369646608283
 
 c1, c2 = [
@@ -19,7 +29,8 @@ c1, c2 = [
 
 e1, e2 = 31, 71
 
-# 1) Extended GCD to find s, t such that s*e1 + t*e2 = gcd(e1,e2)=1
+# ─── Step 1: Extended GCD to find coefficients ─────────────────────────────────
+# This function implements the Extended Euclidean Algorithm
 def egcd(a, b):
     if b == 0:
         return (1, 0, a)
@@ -28,13 +39,14 @@ def egcd(a, b):
     y = x2 - (a // b) * y2
     return (x, y, g)
 
+# These 3 values are the Bézout coefficients and gcd
 s, t, g = egcd(e1, e2)
 if g != 1:
     print("Exponents not coprime!")
     sys.exit(1)
 
-# 2) Reconstruct m = c1^s * c2^t mod n
-#    If s<0, use inverse(c1)^{-s}; similarly for t
+# ─── Step 2: Reconstruct message using Bézout coefficients ─────────────────────
+# Using the coefficients s and t, we can compute the message
 if s < 0:
     c1_part = pow(inverse(c1, n), -s, n)
 else:
@@ -47,6 +59,6 @@ else:
 
 m = (c1_part * c2_part) % n
 
-# 3) Convert back to bytes and print
+# ─── Step 3: Convert to bytes and print flag ───────────────────────────────────
 flag = long_to_bytes(m)
 print("Recovered flag:", flag.decode())

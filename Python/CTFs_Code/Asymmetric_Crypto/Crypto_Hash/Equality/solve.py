@@ -1,37 +1,55 @@
-#Find a string that is both the same and different than another string!
+"""
 
-#nc 130.192.5.212 6631
+Find a string that is both the same and different than another string!
 
-# Collision attack on MD4
+nc 130.192.5.212 6631
 
-#FLAG: CRYPTO25{4dc2e2e9-a14f-4382-8a44-f57852a626ef}
+"""
 
-#!/usr/bin/env python3
+# ─── Attack ──────────────────────────────────────────────────────────────────────
+# Collision attack on MD4 
+
 from pwn import remote
+from MD4Collision import Collision  # provides m1, m2 collision generator
 
-HOST = "130.192.5.212"
-PORT = 6631
-
-# Two different 64-byte blocks whose MD4 digests collide but whose MD5 digests differ
-s1_hex = ("839c7a4d7a92cb5678a5d5b9eea5a757"
-          "3c8a74deb366c3dc20a083b69f5d2a3bb"
-          "3719dc69891e9f95e809fd7e8b23ba631"
-          "8edd45e51fe39708bf9427e9c3e8b9")
-s2_hex = ("839c7a4d7a92cbd678a5d529eea5a757"
-          "3c8a74deb366c3dc20a083b69f5d2a3bb"
-          "3719dc69891e9f95e809fd7e8b23ba631"
-          "8edc45e51fe39708bf9427e9c3e8b9")
-
-# Confirm MD4(s1) == MD4(s2) but MD5(s1) != MD5(s2)
-# (this collision pair comes from Asecuritysite’s MD4‐collision examples) :contentReference[oaicite:0]{index=0}
+# ─── Steps ──────────────────────────────────────────────────────────────────────
+#   1. Use the `Collision()` function to generate two distinct messages m1, m2
+#      such that MD4(m1) == MD4(m2).
+#   2. Connect to the remote service.
+#   3. Send m1 (hex-encoded) when prompted for the first string.
+#   4. Send m2 (hex-encoded) when prompted for the second string.
+#   5. Read and display the server’s response (the flag).
 
 def main():
-    conn = remote(HOST, PORT)
-    conn.recvuntil(b"Enter the first string: ")
-    conn.sendline(s1_hex.encode())
-    conn.recvuntil(b"Enter your second string: ")
-    conn.sendline(s2_hex.encode())
-    print(conn.recvall().decode())
+    # Step 1: Generate two colliding messages
+    m1_hex, m2_hex, h1, h2 = Collision()
+    print(f"Generated MD4 collision:\n MD4(m1) = {h1}\n MD4(m2) = {h2}\n")
+
+    host = "130.192.5.212"
+    port = 6631
+
+    # Step 2: Connect to the remote CTF service
+    with remote(host, port) as s:
+        # Step 3: Wait for and send the first colliding string
+        data = s.recvuntil(b"Enter the first string:")
+        print(data.decode(), end="")
+        s.sendline(m1_hex.encode())
+
+        # Step 4: Wait for and send the second colliding string
+        print()
+        data = s.recvuntil(b"Enter your second string:")
+        print(data.decode(), end="")
+        s.sendline(m2_hex.encode())
+        print()
+
+        # Step 5: Read and display the server’s response (the flag)
+        response = s.recvall()
+        print(response.decode())
 
 if __name__ == "__main__":
     main()
+
+
+
+# ─── FLAG ───────────────────────────────────────────────────────────────────────
+# CRYPTO25{4dc2e2e9-a14f-4382-8a44-f57852a626ef}

@@ -2,39 +2,56 @@
 
 # nc 130.192.5.212 6645
 
+# Looking at the code, this implements an RSA blinding attack, 
+# which falls under the category of implementation attacks.
+
 #FLAG: CRYPTO25{af37efa5-de5b-4de2-adcd-43324caca805}
+
+# ─── Attack ──────────────────────────────────────────────────────────────────────
+# Attack Type: Implementation Attacks
+# This is classified as an implementation attack because it exploits
+# the improper implementation of the RSA service that allows both
+# encryption and decryption operations without proper access controls.
+# Using RSA blinding, we can trick the server into decrypting our target
+# ciphertext by disguising it as a different value.
+
+# ─── Steps ──────────────────────────────────────────────────────────────────────
+#   1. Connect to the server and read the modulus n and target ciphertext c.
+#   2. Choose a blinding factor s and compute the blinded ciphertext c' = c · s^e mod n.
+#   3. Request decryption of c' to obtain the blinded plaintext m' = m · s mod n.
+#   4. Unblind by computing m = m' · s^(-1) mod n to recover the original message.
+#   5. Convert the recovered message to bytes to reveal the flag.
+
+# ─── Server Information ─────────────────────────────────────────────────────────
+# nc 130.192.5.212 6645
 
 #!/usr/bin/env python3
 from pwn import remote
 from Crypto.Util.number import inverse, long_to_bytes
 
+# ─── Given Values ────────────────────────────────────────────────────────────────
 HOST = '130.192.5.212'
 PORT = 6645
-
 e = 65537
 
 def main():
-    # 1) connect and read n and the challenge ciphertext c
+    # ─── Step 1: Connect and read n and target ciphertext ──────────────────────
     conn = remote(HOST, PORT)
     n = int(conn.recvline().strip())
     c = int(conn.recvline().strip())
 
-    # 2) pick any blinding factor s != 1 mod n
-    #    (we choose 2 here for simplicity)
-    s = 2
-
-    # 3) compute blinded ciphertext c' = c * s^e mod n
+    # ─── Step 2: Choose blinding factor and compute blinded ciphertext ─────────
+    s = 2  # blinding factor (any value != 1 mod n works)
     c_blinded = (c * pow(s, e, n)) % n
 
-    # 4) ask the server to decrypt c'
-    #    prefix 'd' to indicate decryption request
+    # ─── Step 3: Request decryption of blinded ciphertext ──────────────────────
     conn.sendline(b'd' + str(c_blinded).encode())
     m_blinded = int(conn.recvline().strip())
 
-    # 5) unblind: m = m_blinded * inverse(s) mod n
+    # ─── Step 4: Unblind to recover original message ───────────────────────────
     m = (m_blinded * inverse(s, n)) % n
 
-    # 6) convert to bytes and print the flag
+    # ─── Step 5: Convert to bytes and print flag ───────────────────────────────
     flag = long_to_bytes(m)
     print(flag.decode())
 

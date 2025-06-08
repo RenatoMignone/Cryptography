@@ -10,6 +10,7 @@ nc 130.192.5.212 6544
 
 # ─── Attack ─────────────────────────────────────────────────────────────────────
 # Byte-at-a-time ECB decryption with unknown random prefix 
+# ECB padding oracle attack.
 
 # ─── Steps ──────────────────────────────────────────────────────────────────────
 #   1. Detect the length of the unknown random prefix by sending repeated blocks
