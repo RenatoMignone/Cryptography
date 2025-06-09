@@ -1,7 +1,7 @@
 # FLAG: CRYPTO25{b697e692-401f-4070-9f1f-c9dc2e97a7e9}
 
 # ─── Attack ──────────────────────────────────────────────────────────────────────
-# Attack Type: Fermat's Factorization
+# Attack Type: Fermat's Factorization when two prime factors are close together.
 # This is classified as a mathematical attack because it exploits
 # the weakness in RSA when the two prime factors p and q are close together.
 # Fermat's factorization method is highly efficient when the difference

@@ -1,8 +1,7 @@
 # FLAG: CRYPTO25{b4b6d1f1-929c-4a41-9900-51091ea9b258}
 
 # ─── Attack ──────────────────────────────────────────────────────────────────────
-# Attack Type: LSB Oracle
-# This is classified as an implementation attack because it exploits
+# Attack Type: LSB Oracle, exploits
 # an oracle that reveals the least significant bit of decrypted ciphertexts.
 # By repeatedly doubling the plaintext and querying the oracle, we can
 # perform a binary search to recover the entire message bit by bit.
@@ -17,7 +16,6 @@
 # ─── Server Information ─────────────────────────────────────────────────────────
 # nc 130.192.5.212 6647
 
-#!/usr/bin/env python3
 from pwn import remote
 from fractions import Fraction
 from Crypto.Util.number import long_to_bytes

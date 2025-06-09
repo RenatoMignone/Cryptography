@@ -28,23 +28,23 @@ from Crypto.Cipher import AES
 
 BLOCK_SIZE = AES.block_size  # 16 bytes
 
-def get_block(ct: bytes, idx: int) -> bytes:
-    
+
+# ──────────────────────────────────────────────────────────────────────
+def get_block(ct: bytes, idx: int) -> bytes:    
     # Extract the idx-th 16-byte block from ciphertext.
     return ct[idx*BLOCK_SIZE:(idx+1)*BLOCK_SIZE]
 
+# ──────────────────────────────────────────────────────────────────────
 def connect():
-    
     # Open connection and consume initial menu prompt.
     io = remote("130.192.5.212", 6544)
     io.recvuntil(b"> ")
     return io
 
+# ──────────────────────────────────────────────────────────────────────
 def send_enc(io, data_bytes: bytes) -> bytes:
-
     # Send 'enc' command with hex-encoded data_bytes, then
     # return the raw ciphertext bytes.
-
     io.sendline(b"enc")
     io.recvuntil(b"> ")
     io.sendline(data_bytes.hex().encode())
@@ -52,11 +52,10 @@ def send_enc(io, data_bytes: bytes) -> bytes:
     io.recvuntil(b"> ")
     return bytes.fromhex(ct_line.decode())
 
+# ──────────────────────────────────────────────────────────────────────
 def find_padding_len(io) -> int:
-
-    # Find minimal pad_len such that sending b'A'*pad_len + b'B'*32
-    # produces two identical consecutive blocks in the ciphertext.
-
+    # So we are finding the length of the padding based on two identical blocks
+    # Encrypted in the same way because of the ECB mode.
     for pad_len in range(32):
         ct = send_enc(io, b"A"*pad_len + b"B"*32)
         blocks = [ct[i:i+BLOCK_SIZE] for i in range(0, len(ct), BLOCK_SIZE)]
@@ -66,6 +65,7 @@ def find_padding_len(io) -> int:
                 return pad_len
     raise Exception("padding alignment not found")
 
+# ──────────────────────────────────────────────────────────────────────
 def recover_flag(io, pad_len: int) -> bytes:
 
     # Perform byte-at-a-time ECB decryption:
@@ -99,6 +99,7 @@ def recover_flag(io, pad_len: int) -> bytes:
         if known.endswith(b"}"):
             return known
 
+# ──────────────────────────────────────────────────────────────────────
 def main():
     io = connect()
 

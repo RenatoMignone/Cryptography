@@ -1,9 +1,7 @@
 # FLAG: CRYPTO25{c4cb7375-4e31-4379-ad1a-2a9b2361c592}
 
 # ─── Attack ──────────────────────────────────────────────────────────────────────
-# Attack Type: Common Prime Attack
-# This is classified as a mathematical attack because it exploits
-# the weakness when multiple RSA moduli share common prime factors.
+# Attack Type: Common Prime Attack, multiple RSA moduli share a common prime factor.
 # When two moduli n₁ and n₂ share a prime factor p, computing gcd(n₁, n₂)
 # reveals this common factor, allowing factorization of both moduli.
 
@@ -46,14 +44,18 @@ e = 65537
 
 # ─── Step 1: Find common factors between moduli ────────────────────────────────
 # The for loop iterates through all pairs of moduli to find common factors
+# This is done to find a couple of moduli that share a prime factor.
 for i in range(6):
     for j in range(i + 1, 6):
         g = math.gcd(mods[i], mods[j])
+        # If the GCD is greater than 1, we have found a common factor
         if g != 1:
             print(f"Found common factor {g} between mod {i} and {j}")
             
             # ─── Step 2-3: Complete factorization ──────────────────────────────
             p = g
+
+            # Now we can compute q
             q = mods[i] // p
             
             # ─── Step 4: Compute Euler's totient function ──────────────────────

@@ -6,6 +6,7 @@ n = p*q
 e = 65537
 print(n)
 m = bytes_to_long(flag.encode())
+# This value that we print is the ciphertext, so the encrypted flag
 print(pow(m, e, n))
 
 req = input()

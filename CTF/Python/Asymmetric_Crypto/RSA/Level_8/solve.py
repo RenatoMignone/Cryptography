@@ -1,8 +1,7 @@
 # FLAG: CRYPTO25{2aff1e58-5c8c-4840-8bb7-ceb07b6276be}
 
 # ─── Attack ──────────────────────────────────────────────────────────────────────
-# Attack Type: Hastad's Broadcast
-# This is classified as a mathematical attack because it exploits
+# Attack Type: Hastad's Broadcast, exploits
 # the vulnerability of using small public exponents when the same message
 # is sent to multiple recipients. Using the Chinese Remainder Theorem,
 # we can recover m^e and then compute the e-th root to get the plaintext.

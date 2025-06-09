@@ -8,8 +8,7 @@
 #FLAG: CRYPTO25{af37efa5-de5b-4de2-adcd-43324caca805}
 
 # ─── Attack ──────────────────────────────────────────────────────────────────────
-# Attack Type: Implementation Attacks
-# This is classified as an implementation attack because it exploits
+# Attack Type: Implementation Attacks, exploits 
 # the improper implementation of the RSA service that allows both
 # encryption and decryption operations without proper access controls.
 # Using RSA blinding, we can trick the server into decrypting our target

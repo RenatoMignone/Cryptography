@@ -1,9 +1,7 @@
 # FLAG: CRYPTO25{2533166c-ce76-4f5e-b992-f7e4a24d0b97}
 
 # ─── Attack ──────────────────────────────────────────────────────────────────────
-# Attack Type: Common Moduli
-# This is classified as a mathematical attack because it exploits
-# the weakness when the same RSA modulus is reused with different
+# Attack Type: Common Moduli, the same RSA modulus is reused with different
 # (coprime) exponents to encrypt the same message. Using the Extended
 # Euclidean Algorithm, we can recover the plaintext without factoring.
 
@@ -31,6 +29,7 @@ e1, e2 = 31, 71
 
 # ─── Step 1: Extended GCD to find coefficients ─────────────────────────────────
 # This function implements the Extended Euclidean Algorithm
+# It is needed to find in a faster way the Bézout coefficient
 def egcd(a, b):
     if b == 0:
         return (1, 0, a)
